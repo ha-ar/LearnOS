@@ -189,6 +189,14 @@ INSERT INTO resource_providers (id, name, type, base_url, attribution_text) VALU
 -- RESOURCES (All internal — no external URLs)
 -- ============================================================
 INSERT INTO resources (id, provider_id, title, format, url, duration_min, grade_min, grade_max, description, content_body) VALUES
+  ('b1000000-0000-0000-0000-000000000001',
+   'b0000000-0000-0000-0000-000000000002',
+   'Equivalent Fractions – Khan Academy Video',
+   'other',
+   NULL, 15, 5, 7,
+   'Video lesson explaining how to find equivalent fractions by multiplying or dividing the numerator and denominator by the same number.',
+   NULL),
+
   ('b1000000-0000-0000-0000-000000000002',
    'b0000000-0000-0000-0000-000000000002',
    'Equivalent Fractions – Practice Quiz (5 Questions)',
@@ -265,6 +273,7 @@ To simplify 8/12, find the GCF of 8 and 12:
 -- RESOURCE ↔ COMPETENCY MAP
 -- ============================================================
 INSERT INTO resource_competency_map (resource_id, competency_id, fit_type) VALUES
+  ('b1000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', 'primary'),
   ('b1000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', 'primary'),
   ('b1000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000001', 'primary'),
   ('b1000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000002', 'supplementary'),
