@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const safety_controller_js_1 = require("../controllers/safety.controller.js");
+const auth_js_1 = require("../middleware/auth.js");
+const router = (0, express_1.Router)();
+router.use(auth_js_1.authenticateToken);
+router.post('/check', safety_controller_js_1.SafetyController.checkContent);
+router.get('/consent/:learner_id', safety_controller_js_1.SafetyController.verifyConsent);
+exports.default = router;

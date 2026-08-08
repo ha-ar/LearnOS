@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: learnos_postgres
+    environment:
+      POSTGRES_DB: learnos_dev
+      POSTGRES_USER: learnos
+      POSTGRES_PASSWORD: learnos_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learnos -d learnos_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - learnos_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: learnos_backend_dev
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://learnos:learnos_dev_password@postgres:5432/learnos_dev
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/scripts:/app/scripts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - learnos_net
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: learnos_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@learnos.dev
+      PGADMIN_DEFAULT_PASSWORD: LearnOS2026!
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - learnos_net
+    profiles:
+      - tools   # Only starts with: docker-compose --profile tools up
+
+volumes:
+  postgres_data:
+
+networks:
+  learnos_net:
+    driver: bridge

@@ -1,0 +1,12 @@
+.gcloudignore
+.git
+node_modules/
+.dart_tool/
+macos/
+windows/
+linux/
+ios/
+android/
+!build
+!build/web
+!build/web/**

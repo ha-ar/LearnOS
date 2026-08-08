@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ─── Light Mode Bento Design Tokens ────────────────────────────────────────── */
+:root {
+  /* Brand Actions (Dark Obsidian Pill Buttons) */
+  --primary:          #0f172a;
+  --primary-dim:      #f1f5f9;
+  --primary-border:   #e5e7eb;
+
+  /* Status & Accents */
+  --success:          #10b981;
+  --success-dim:      #ecfdf5;
+  --warning:          #f59e0b;
+  --warning-dim:      #fff7ed;
+  --danger:           #ef4444;
+  --danger-dim:       #fef2f2;
+  --info:             #0ea5e9;
+  --info-dim:         #eff6ff;
+  --purple:           #8b5cf6;
+  --purple-dim:       #f5f3ff;
+
+  /* Light Canvas & Bento Surfaces */
+  --bg:               #f7f8fa;
+  --surface:          #ffffff;
+  --surface-elevated: #f1f5f9;
+  --surface-hover:    #e2e8f0;
+
+  /* Crisp Borders */
+  --border:           #e5e7eb;
+  --border-subtle:    #f3f4f6;
+
+  /* High Contrast Typography */
+  --text-primary:     #0f172a;
+  --text-secondary:   #334155;
+  --text-muted:       #64748b;
+
+  /* Navbar */
+  --navbar-h:         64px;
+
+  /* Radii & Shadows */
+  --radius-md:        14px;
+  --radius-lg:        20px;
+  --radius-xl:        24px;
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.03);
+  --shadow-md: 0 10px 25px rgba(0,0,0,0.04);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ─── Page Layout & Container Padding ────────────────────────────── */
+.page-layout {
+  min-height: 100vh;
+  background-color: var(--bg);
+}
+
+.main-container {
+  width: 100%;
+}
+
+.page-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px 40px 60px 40px;
+}
+
+/* ─── Bento Cards & Components ───────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  transition: all 0.18s ease;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #1e293b; }
+.btn-ghost { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.badge.success { background: var(--success-dim); color: #047857; border-color: rgba(16,185,129,0.2); }
+.badge.info    { background: var(--info-dim);    color: #1d4ed8; border-color: rgba(14,165,233,0.2); }
+.badge.primary { background: #f1f5f9; color: var(--primary); border-color: var(--border); }
+
+/* Fade in animation */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.25s ease both; }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border);
+}
+.empty-state .icon { font-size: 40px; }
+.empty-state h3 { font-size: 16px; font-weight: 700; }
+.empty-state p { font-size: 14px; color: var(--text-secondary); max-width: 320px; }
+
+/* Spinner */
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
