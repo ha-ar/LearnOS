@@ -411,6 +411,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
     final aiResult = await AiApiService.askTutor(
       prompt: text.trim(),
       topic: state.topic,
+      sessionId: state.sessionId,
     );
 
     if (!mounted) return;

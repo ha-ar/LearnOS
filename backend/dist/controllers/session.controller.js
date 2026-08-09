@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SessionController = void 0;
 const session_service_js_1 = require("../services/session.service.js");
+const escalation_service_js_1 = require("../services/escalation.service.js");
 const index_js_1 = require("../db/index.js");
 class SessionController {
     /**
@@ -118,12 +119,7 @@ class SessionController {
          WHERE u.id = $1 LIMIT 1`, [learnerId]);
             const learnerName = userRes.rows[0]?.name ?? 'Learner';
             const learnerGrade = userRes.rows[0]?.grade ?? '';
-            // 3. Find the assigned mentor for this tenant/learner
-            const mentorRes = await (0, index_js_1.query)(`SELECT assigned_mentor_id FROM learner_mentor_assignments
-         WHERE learner_id = $1
-         ORDER BY assigned_at DESC LIMIT 1`, [learnerId]);
-            const mentorId = mentorRes.rows[0]?.assigned_mentor_id ?? null;
-            // 4. Create an escalation so the mentor dashboard surfaces this immediately
+            // 3. Create an escalation so the mentor dashboard surfaces this immediately
             const percentDone = tasks_total > 0
                 ? Math.round((tasks_completed / tasks_total) * 100)
                 : 0;
@@ -132,23 +128,20 @@ class SessionController {
                 `Session progress: ${tasks_completed}/${tasks_total} tasks (${percentDone}%). ` +
                 `Reason given: "${reason}". ` +
                 `Please verify the learner is supervised and follow up with them.`;
-            await (0, index_js_1.query)(`INSERT INTO escalations
-           (session_id, learner_id, tenant_id, assigned_mentor_id,
-            trigger_type, brief_text, evidence_snapshot, status)
-         VALUES ($1, $2, $3, $4, 'system_rule', $5, $6, 'pending')`, [
-                sessionId,
-                learnerId,
-                tenantId,
-                mentorId,
-                briefText,
-                JSON.stringify({
+            await escalation_service_js_1.EscalationService.create({
+                session_id: sessionId,
+                learner_id: learnerId,
+                tenant_id: tenantId,
+                trigger_type: 'system_rule',
+                brief_text: briefText,
+                evidence_snapshot: {
                     exit_reason: reason,
                     elapsed_seconds,
                     tasks_completed,
                     tasks_total,
                     percent_complete: percentDone,
-                }),
-            ]);
+                },
+            });
             res.status(200).json({
                 success: true,
                 message: 'Exit notification sent to mentor.',

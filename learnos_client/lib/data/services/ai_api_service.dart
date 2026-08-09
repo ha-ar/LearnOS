@@ -5,6 +5,7 @@ class AiApiService {
   static Future<Map<String, dynamic>> askTutor({
     required String prompt,
     String? topic,
+    String? sessionId,
     List<Map<String, String>>? history,
   }) async {
     try {
@@ -13,6 +14,7 @@ class AiApiService {
         {
           'prompt': prompt,
           if (topic != null) 'topic': topic,
+          if (sessionId != null) 'session_id': sessionId,
           if (history != null) 'history': history,
         },
         requireAuth: true,

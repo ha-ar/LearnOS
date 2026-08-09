@@ -298,7 +298,7 @@ class AdminService {
        FROM sessions
        WHERE tenant_id = $1 AND created_at >= date_trunc('week', NOW())`, [tenantId]);
         // Escalations
-        const escalationRes = await (0, index_js_1.query)(`SELECT COUNT(*) FILTER (WHERE status = 'open' OR status = 'in_progress') as open_escalations,
+        const escalationRes = await (0, index_js_1.query)(`SELECT COUNT(*) FILTER (WHERE status = 'pending' OR status = 'attending') as open_escalations,
               COUNT(*) FILTER (WHERE status = 'resolved') as resolved_escalations
        FROM escalations
        WHERE tenant_id = $1`, [tenantId]);
@@ -309,7 +309,7 @@ class AdminService {
        WHERE u.tenant_id = $1`, [tenantId]);
         // Devices status summary
         const deviceRes = await (0, index_js_1.query)(`SELECT COUNT(*) FILTER (WHERE is_active = true) as total_devices,
-              COUNT(*) FILTER (WHERE is_active = true AND last_seen_at >= NOW() - INTERVAL '15 minutes') as online_devices
+              COUNT(*) FILTER (WHERE is_active = true AND last_seen_at >= NOW() - INTERVAL '15 minutes') as devices_online
        FROM devices
        WHERE tenant_id = $1`, [tenantId]);
         return {
@@ -333,18 +333,18 @@ class AdminService {
               COALESCE(u.is_active, true) as is_active,
               COUNT(DISTINCT s.id) as sessions_total,
               COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'completed') as sessions_completed,
-              COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'open') as open_escalations,
+              COUNT(DISTINCT e.id) FILTER (WHERE e.status IN ('pending', 'attending')) as open_escalations,
               COALESCE(AVG(lcs.mastery_score), 0) as avg_mastery
        FROM users u
        LEFT JOIN learner_profiles lp ON lp.learner_id = u.id
        LEFT JOIN sessions s ON s.learner_id = u.id AND s.created_at >= NOW() - INTERVAL '14 days'
-       LEFT JOIN escalations e ON e.learner_id = u.id AND e.status = 'open'
+       LEFT JOIN escalations e ON e.learner_id = u.id AND e.status IN ('pending', 'attending')
        LEFT JOIN learner_competency_states lcs ON lcs.learner_id = u.id
        WHERE u.tenant_id = $1 AND u.role = 'learner' AND u.is_active = true
        GROUP BY u.id, u.name, u.email, lp.grade, u.is_active
        HAVING (
          (COUNT(DISTINCT s.id) > 0 AND COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'completed')::float / COUNT(DISTINCT s.id)::float < 0.6)
-         OR COUNT(DISTINCT e.id) FILTER (WHERE e.status = 'open') >= 1
+         OR COUNT(DISTINCT e.id) FILTER (WHERE e.status IN ('pending', 'attending')) >= 1
          OR COALESCE(AVG(lcs.mastery_score), 0.5) < 0.4
        )`, [tenantId]);
         return res.rows.map((row) => ({

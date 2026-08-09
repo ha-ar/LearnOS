@@ -10,12 +10,14 @@ class RecommendationController {
         try {
             const { session_id, current_task_id, incorrect_count_this_task, hints_requested, ai_turns } = req.body;
             const learnerId = req.user.sub;
+            const tenantId = req.user.tenant_id;
             if (!session_id) {
                 res.status(400).json({ error: 'session_id is required', code: 'MISSING_FIELDS' });
                 return;
             }
             const recommendation = await recommendation_service_js_1.RecommendationService.getNextBestAction({
                 learner_id: learnerId,
+                tenant_id: tenantId,
                 session_id,
                 current_task_id,
                 incorrect_count_this_task,

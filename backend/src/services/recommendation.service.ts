@@ -1,8 +1,10 @@
 import { query } from '../db/index.js';
 import { ResourceService } from './resource.service.js';
+import { EscalationService } from './escalation.service.js';
 
 export interface NextActionInput {
   learner_id: string;
+  tenant_id: string;
   session_id: string;
   current_task_id?: string;
   incorrect_count_this_task?: number;
@@ -148,6 +150,25 @@ export class RecommendationService {
         JSON.stringify(evidence),
       ]
     );
+
+    // If the rule engine decided a mentor is needed, actually raise the escalation
+    // so the mentor dashboard surfaces it — not just log the decision.
+    if (actionType === 'mentor_escalation') {
+      try {
+        await EscalationService.create({
+          session_id: input.session_id,
+          learner_id: input.learner_id,
+          tenant_id: input.tenant_id,
+          competency_id: undefined,
+          trigger_type: 'system_rule',
+          brief_text: `⚠️ REPEATED STRUGGLE — The recommendation engine detected ${incorrect} incorrect answers and ${hints} hints requested on the current task (rule: ${ruleFired}). The learner may need hands-on mentor support.`,
+          ai_suggested_approach: 'Try a worked example together, or have the learner explain their current approach out loud to find the sticking point.',
+          evidence_snapshot: { rule_fired: ruleFired, evidence },
+        });
+      } catch (escErr) {
+        console.error('Failed to create recommendation-engine escalation:', escErr);
+      }
+    }
 
     return {
       action_type: actionType,

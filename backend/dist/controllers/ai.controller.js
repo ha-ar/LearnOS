@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AiController = void 0;
 const ai_service_js_1 = require("../services/ai.service.js");
+const escalation_service_js_1 = require("../services/escalation.service.js");
 const index_js_1 = require("../db/index.js");
 class AiController {
     /**
@@ -9,7 +10,7 @@ class AiController {
      */
     static async tutorInteraction(req, res) {
         try {
-            const { prompt, topic, history } = req.body;
+            const { prompt, topic, history, session_id } = req.body;
             const learner_name = req.user?.name || 'Learner';
             if (!prompt) {
                 res.status(400).json({ error: 'prompt is required', code: 'MISSING_FIELDS' });
@@ -21,6 +22,27 @@ class AiController {
                 topic,
                 history,
             });
+            if (result.escalate_to_mentor) {
+                if (session_id) {
+                    try {
+                        await escalation_service_js_1.EscalationService.create({
+                            session_id,
+                            learner_id: req.user.sub,
+                            tenant_id: req.user.tenant_id,
+                            trigger_type: 'ai_suggested',
+                            brief_text: `⚠️ AI COMPANION SAFETY FLAG — ${learner_name} sent a message during a ${topic || 'learning'} session that the AI Companion flagged as a possible sign of distress. Please check in with them directly.`,
+                            ai_suggested_approach: 'Start with a calm, private check-in. Ask open-ended questions and follow the centre\'s student wellbeing protocol before returning to academic content.',
+                            evidence_snapshot: { prompt_snippet: String(prompt).slice(0, 200), model_used: result.model_used },
+                        });
+                    }
+                    catch (escErr) {
+                        console.error('Failed to create AI-suggested escalation:', escErr);
+                    }
+                }
+                else {
+                    console.warn('AI tutor flagged escalate_to_mentor but no session_id was provided — escalation not persisted.');
+                }
+            }
             res.status(200).json({ success: true, ...result });
         }
         catch (err) {

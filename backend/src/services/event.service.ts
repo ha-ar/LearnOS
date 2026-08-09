@@ -1,5 +1,6 @@
 import { query, pool } from '../db/index.js';
 import { EventType, TelemetryEventInput, LearnOSEvent, SessionSummary } from '../types/event.js';
+import { EscalationService } from './escalation.service.js';
 
 const isUuid = (id?: string): boolean =>
   typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -143,7 +144,30 @@ export class EventService {
       ]
     );
 
-    return this.formatEventRow(res.rows[0]);
+    const formatted = this.formatEventRow(res.rows[0]);
+
+    // A learner explicitly asking for mentor help (e.g. the "I'm stuck" button) must
+    // actually raise an escalation, not just sit in the telemetry log.
+    if (
+      event.event_type === EventType.MENTOR_ESCALATION_REQUESTED &&
+      isUuid(formatted.session_id) &&
+      formatted.learner_id
+    ) {
+      try {
+        await EscalationService.create({
+          session_id: formatted.session_id,
+          learner_id: formatted.learner_id,
+          tenant_id: formatted.tenant_id,
+          trigger_type: 'learner_requested',
+          brief_text: `🙋 LEARNER REQUESTED HELP — the learner tapped "I'm stuck" and asked for a mentor directly.`,
+          evidence_snapshot: { reason: formatted.payload?.reason || 'learner_flagged' },
+        });
+      } catch (escErr) {
+        console.error('Failed to create learner-requested escalation:', escErr);
+      }
+    }
+
+    return formatted;
   }
 
   /**
