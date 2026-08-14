@@ -32,8 +32,11 @@ class AppExitService {
       debugPrint('[AppExitService] Exit notification failed (proceeding anyway): $e');
     }
 
-    // Disable prevent-close then close cleanly
-    await windowManager.setPreventClose(false);
-    await windowManager.close();
+    // Disable prevent-close then close cleanly (desktop only; window_manager
+    // has no web implementation).
+    if (!kIsWeb) {
+      await windowManager.setPreventClose(false);
+      await windowManager.close();
+    }
   }
 }
