@@ -189,6 +189,15 @@ INSERT INTO resource_providers (id, name, type, base_url, attribution_text) VALU
 -- RESOURCES (All internal — no external URLs)
 -- ============================================================
 INSERT INTO resources (id, provider_id, title, format, url, duration_min, grade_min, grade_max, description, content_body) VALUES
+  ('b1000000-0000-0000-0000-000000000001',
+   'b0000000-0000-0000-0000-000000000002',
+   'Equivalent Fractions – Khan Academy Video',
+   'other',
+   'https://www.khanacademy.org/math/arithmetic/fraction-arithmetic/arith-review-equivalent-fractions/v/equivalent-fractions',
+   15, 5, 7,
+   'Video lesson walking through equivalent fractions using the multiply-top-and-bottom method.',
+   NULL),
+
   ('b1000000-0000-0000-0000-000000000002',
    'b0000000-0000-0000-0000-000000000002',
    'Equivalent Fractions – Practice Quiz (5 Questions)',
