@@ -11,6 +11,7 @@ import recommendationRoutes from './routes/recommendation.routes.js';
 import mentorRoutes from './routes/mentor.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import onboardingRoutes from './routes/onboarding.routes.js';
 
 export const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/mentor', mentorRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/reports', reportRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // Global 404 Handler
 app.use((req, res) => {

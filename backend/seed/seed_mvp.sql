@@ -518,3 +518,125 @@ VALUES
    NOW())
 ON CONFLICT (learner_id, week_label) DO NOTHING;
 
+
+-- ============================================================
+-- ONBOARDING: GRADE 5–7 MATHS LADDER + PLACEMENT DIAGNOSTIC
+-- Added to support learner registration -> placement test ->
+-- Digital Twin initialisation -> personalised learning plan.
+-- Idempotent: safe to re-run.
+-- ============================================================
+
+-- Extend the competency ladder (c1..c5 already exist above)
+INSERT INTO competencies (id, curriculum_id, subject, topic, grade_level, prerequisite_ids, description) VALUES
+  ('c0000000-0000-0000-0000-000000000006',
+   'a0000000-0000-0000-0000-000000000001',
+   'Mathematics', 'Place Value & Whole Numbers', 'Grade 5', '{}',
+   'Reading, writing and comparing whole numbers; understanding the value of each digit.'),
+
+  ('c0000000-0000-0000-0000-000000000007',
+   'a0000000-0000-0000-0000-000000000001',
+   'Mathematics', 'Decimals & Place Value', 'Grade 6',
+   ARRAY['c0000000-0000-0000-0000-000000000006']::UUID[],
+   'Understanding tenths and hundredths; comparing and ordering decimals.'),
+
+  ('c0000000-0000-0000-0000-000000000008',
+   'a0000000-0000-0000-0000-000000000001',
+   'Mathematics', 'Fraction–Decimal Conversion', 'Grade 6',
+   ARRAY['c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000007']::UUID[],
+   'Converting simple fractions to decimals and back.'),
+
+  ('c0000000-0000-0000-0000-000000000009',
+   'a0000000-0000-0000-0000-000000000001',
+   'Mathematics', 'Ratios & Proportion', 'Grade 7',
+   ARRAY['c0000000-0000-0000-0000-000000000002']::UUID[],
+   'Understanding ratios, equivalent ratios and simple proportion problems.'),
+
+  ('c0000000-0000-0000-0000-000000000010',
+   'a0000000-0000-0000-0000-000000000001',
+   'Mathematics', 'Percentages', 'Grade 7',
+   ARRAY['c0000000-0000-0000-0000-000000000008','c0000000-0000-0000-0000-000000000009']::UUID[],
+   'Understanding percentages as fractions of 100; finding a percentage of a quantity.')
+ON CONFLICT (id) DO NOTHING;
+
+-- Primary lesson resources for ladder competencies that lack one (c3..c10)
+INSERT INTO resources (id, provider_id, title, format, url, duration_min, grade_min, grade_max, description, content_body) VALUES
+  ('b3000000-0000-0000-0000-000000000103','b0000000-0000-0000-0000-000000000002','Adding Fractions with the Same Denominator — Lesson','article',NULL,10,6,7,'Add fractions that share a denominator by adding the numerators.',NULL),
+  ('b3000000-0000-0000-0000-000000000104','b0000000-0000-0000-0000-000000000002','Adding Fractions with Different Denominators — Lesson','article',NULL,12,6,7,'Find a common denominator, then add unlike fractions.',NULL),
+  ('b3000000-0000-0000-0000-000000000105','b0000000-0000-0000-0000-000000000002','Multiplying Fractions — Lesson','article',NULL,10,6,7,'Multiply numerators and denominators; simplify the result.',NULL),
+  ('b3000000-0000-0000-0000-000000000106','b0000000-0000-0000-0000-000000000002','Place Value & Whole Numbers — Lesson','article',NULL,10,5,6,'Understand the value of each digit in a whole number.',NULL),
+  ('b3000000-0000-0000-0000-000000000107','b0000000-0000-0000-0000-000000000002','Understanding Decimals — Lesson','article',NULL,10,5,7,'Tenths and hundredths; comparing and ordering decimals.',NULL),
+  ('b3000000-0000-0000-0000-000000000108','b0000000-0000-0000-0000-000000000002','Converting Fractions to Decimals — Lesson','article',NULL,10,6,7,'Turn simple fractions into decimals and back again.',NULL),
+  ('b3000000-0000-0000-0000-000000000109','b0000000-0000-0000-0000-000000000002','Ratios & Proportion — Lesson','article',NULL,12,6,7,'Compare quantities with ratios and solve simple proportions.',NULL),
+  ('b3000000-0000-0000-0000-000000000110','b0000000-0000-0000-0000-000000000002','Percentages — Lesson','article',NULL,12,6,7,'Percentages as parts of 100; find a percentage of a quantity.',NULL)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO resource_competency_map (resource_id, competency_id, fit_type) VALUES
+  ('b3000000-0000-0000-0000-000000000103','c0000000-0000-0000-0000-000000000003','primary'),
+  ('b3000000-0000-0000-0000-000000000104','c0000000-0000-0000-0000-000000000004','primary'),
+  ('b3000000-0000-0000-0000-000000000105','c0000000-0000-0000-0000-000000000005','primary'),
+  ('b3000000-0000-0000-0000-000000000106','c0000000-0000-0000-0000-000000000006','primary'),
+  ('b3000000-0000-0000-0000-000000000107','c0000000-0000-0000-0000-000000000007','primary'),
+  ('b3000000-0000-0000-0000-000000000108','c0000000-0000-0000-0000-000000000008','primary'),
+  ('b3000000-0000-0000-0000-000000000109','c0000000-0000-0000-0000-000000000009','primary'),
+  ('b3000000-0000-0000-0000-000000000110','c0000000-0000-0000-0000-000000000010','primary')
+ON CONFLICT (resource_id, competency_id) DO NOTHING;
+
+-- Placement diagnostic quiz resource
+INSERT INTO resources (id, provider_id, title, format, url, duration_min, grade_min, grade_max, description, content_body) VALUES
+  ('b1000000-0000-0000-0000-000000000010','b0000000-0000-0000-0000-000000000002','Mathematics Placement Diagnostic (Grade 5–7)','internal_quiz',NULL,15,5,7,'Short adaptive placement test spanning the Grade 5–7 Maths ladder. Used to initialise a learner Digital Twin.',NULL)
+ON CONFLICT (id) DO NOTHING;
+
+-- Placement questions — one per ladder competency, tagged with competency + grade
+INSERT INTO quiz_questions
+  (id, resource_id, competency_id, question_text, question_type, options, correct_answer, explanation, difficulty, grade_level, display_order)
+VALUES
+  ('b2000000-0000-0000-0000-000000000101','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000006',
+   'In the number 4,382, what is the value of the digit 3?','multiple_choice',
+   '[{"key":"a","text":"3"},{"key":"b","text":"30"},{"key":"c","text":"300"},{"key":"d","text":"3000"}]','c',
+   'The 3 is in the hundreds place, so its value is 300.','easy',5,1),
+
+  ('b2000000-0000-0000-0000-000000000102','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000001',
+   'A pizza is cut into 4 equal slices. What fraction is one slice?','multiple_choice',
+   '[{"key":"a","text":"1/2"},{"key":"b","text":"1/3"},{"key":"c","text":"1/4"},{"key":"d","text":"1/8"}]','c',
+   'One of four equal parts is 1/4.','easy',6,2),
+
+  ('b2000000-0000-0000-0000-000000000103','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000002',
+   'Which fraction is equivalent to 1/2?','multiple_choice',
+   '[{"key":"a","text":"2/3"},{"key":"b","text":"2/4"},{"key":"c","text":"3/5"},{"key":"d","text":"1/4"}]','b',
+   '1/2 = 2/4 (multiply top and bottom by 2).','easy',6,3),
+
+  ('b2000000-0000-0000-0000-000000000104','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000003',
+   'What is 2/7 + 3/7?','multiple_choice',
+   '[{"key":"a","text":"5/7"},{"key":"b","text":"5/14"},{"key":"c","text":"6/7"},{"key":"d","text":"1/7"}]','a',
+   'Same denominator: add the numerators, 2+3=5, so 5/7.','easy',6,4),
+
+  ('b2000000-0000-0000-0000-000000000105','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000007',
+   'Which decimal is larger: 0.7 or 0.65?','multiple_choice',
+   '[{"key":"a","text":"0.7"},{"key":"b","text":"0.65"},{"key":"c","text":"They are equal"},{"key":"d","text":"Cannot tell"}]','a',
+   '0.70 is greater than 0.65.','medium',6,5),
+
+  ('b2000000-0000-0000-0000-000000000106','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000008',
+   'What is 1/2 written as a decimal?','multiple_choice',
+   '[{"key":"a","text":"0.2"},{"key":"b","text":"0.5"},{"key":"c","text":"0.12"},{"key":"d","text":"1.2"}]','b',
+   '1 divided by 2 = 0.5.','medium',6,6),
+
+  ('b2000000-0000-0000-0000-000000000107','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000004',
+   'What is 1/2 + 1/4?','multiple_choice',
+   '[{"key":"a","text":"2/6"},{"key":"b","text":"3/4"},{"key":"c","text":"1/6"},{"key":"d","text":"2/4"}]','b',
+   'Common denominator 4: 1/2 = 2/4, then 2/4 + 1/4 = 3/4.','medium',7,7),
+
+  ('b2000000-0000-0000-0000-000000000108','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000005',
+   'What is 1/2 × 1/3?','multiple_choice',
+   '[{"key":"a","text":"1/6"},{"key":"b","text":"2/5"},{"key":"c","text":"1/5"},{"key":"d","text":"2/6"}]','a',
+   'Multiply tops (1×1=1) and bottoms (2×3=6): 1/6.','medium',7,8),
+
+  ('b2000000-0000-0000-0000-000000000109','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000009',
+   'The ratio of boys to girls is 2:3. If there are 6 boys, how many girls are there?','multiple_choice',
+   '[{"key":"a","text":"9"},{"key":"b","text":"4"},{"key":"c","text":"6"},{"key":"d","text":"12"}]','a',
+   '6 boys is 2 parts, so 1 part = 3; girls = 3 parts = 9.','hard',7,9),
+
+  ('b2000000-0000-0000-0000-000000000110','b1000000-0000-0000-0000-000000000010','c0000000-0000-0000-0000-000000000010',
+   'What is 25% of 80?','multiple_choice',
+   '[{"key":"a","text":"20"},{"key":"b","text":"25"},{"key":"c","text":"40"},{"key":"d","text":"15"}]','a',
+   '25% = 1/4, and 80 ÷ 4 = 20.','hard',7,10)
+ON CONFLICT (id) DO NOTHING;
