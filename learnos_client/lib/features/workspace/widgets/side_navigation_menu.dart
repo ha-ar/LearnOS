@@ -46,60 +46,64 @@ class _SideNavigationMenuState extends ConsumerState<SideNavigationMenu> {
             height: 60,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentCyan.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome,
-                    color: AppColors.accentCyan,
-                    size: 22,
-                  ),
-                ),
-                if (widget.isExpanded) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'LearnOS',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            letterSpacing: -0.3,
-                          ),
+            // When collapsed the rail is only 72px wide, so the logo and the
+            // toggle button cannot sit side by side. Show only the logo (which
+            // acts as the expand affordance) when collapsed, and the full
+            // logo + label + collapse button when expanded.
+            child: widget.isExpanded
+                ? Row(
+                    children: [
+                      _logoBox(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'LearnOS',
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            Text(
+                              'Adaptive AI OS',
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          'Adaptive AI OS',
-                          style: TextStyle(
-                            color: textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      ),
+                      IconButton(
+                        onPressed: widget.onToggleExpand,
+                        icon: Icon(
+                          Icons.chevron_left,
+                          color: textMuted,
+                          size: 20,
                         ),
-                      ],
+                        tooltip: 'Collapse Menu',
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints.tightFor(width: 32, height: 32),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Tooltip(
+                      message: 'Expand Menu',
+                      child: InkWell(
+                        onTap: widget.onToggleExpand,
+                        borderRadius: BorderRadius.circular(10),
+                        child: _logoBox(),
+                      ),
                     ),
                   ),
-                ],
-                IconButton(
-                  onPressed: widget.onToggleExpand,
-                  icon: Icon(
-                    widget.isExpanded ? Icons.chevron_left : Icons.chevron_right,
-                    color: textMuted,
-                    size: 20,
-                  ),
-                  tooltip: widget.isExpanded ? 'Collapse Menu' : 'Expand Menu',
-                ),
-              ],
-            ),
           ),
 
           const Divider(height: 1),
@@ -269,6 +273,22 @@ class _SideNavigationMenuState extends ConsumerState<SideNavigationMenu> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _logoBox() {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: AppColors.accentCyan.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Icon(
+        Icons.auto_awesome,
+        color: AppColors.accentCyan,
+        size: 22,
       ),
     );
   }
