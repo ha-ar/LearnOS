@@ -74,6 +74,29 @@ export interface RecommendedResource {
   fit_type: string;
 }
 
+export interface SessionTask {
+  id: string;
+  task_order: number;
+  task_type: string;
+  title: string;
+  competency_id: string | null;
+  resource_id: string | null;
+  duration_min: number | null;
+  status: string;
+}
+
+export interface StartLessonResult {
+  started: boolean;
+  reason?: string;
+  competency?: { competency_id: string; topic: string; current_mastery: string };
+  recommended_resource?: RecommendedResource | null;
+  session?: {
+    session: { id: string; session_goal: string; status: string; total_duration_min: number };
+    tasks: SessionTask[];
+  };
+  recommendation?: Recommendation;
+}
+
 export interface Recommendation {
   has_plan: boolean;
   complete?: boolean;

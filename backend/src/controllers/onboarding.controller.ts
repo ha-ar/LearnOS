@@ -115,6 +115,27 @@ export class OnboardingController {
   }
 
   /**
+   * POST /api/onboarding/start-lesson?subject=Mathematics
+   * Generates a focused session plan for the learner's next recommended topic.
+   */
+  static async startLesson(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const learnerId = OnboardingController.resolveLearnerId(req);
+      const subject = req.query.subject ? String(req.query.subject) : (req.body?.subject as string | undefined);
+      const tenantId = req.user?.tenant_id || PILOT_TENANT_ID;
+      const result = await OnboardingService.startLesson(learnerId, tenantId, subject);
+      res.status(result.started ? 201 : 200).json(result);
+    } catch (err: any) {
+      if (err.status) {
+        res.status(err.status).json({ error: err.error, code: err.code });
+      } else {
+        console.error('Start lesson error:', err);
+        res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
+      }
+    }
+  }
+
+  /**
    * GET /api/onboarding/plan?subject=Mathematics
    */
   static async getPlan(req: AuthenticatedRequest, res: Response): Promise<void> {

@@ -108,6 +108,64 @@ export class SessionService {
   }
 
   /**
+   * Generate a session plan focused on a specific competency (e.g. the one the
+   * recommendation engine picked as "next"). Builds the standard
+   * review -> learn -> practice -> reflect flow and attaches the best-fit
+   * primary resource to the learn task.
+   */
+  static async generateSessionPlanForCompetency(
+    learnerId: string,
+    tenantId: string,
+    competencyId: string
+  ) {
+    const compRes = await query(
+      `SELECT id AS competency_id, topic, subject FROM competencies WHERE id = $1`,
+      [competencyId]
+    );
+    if (compRes.rows.length === 0) {
+      throw { status: 404, error: 'Competency not found', code: 'NOT_FOUND' };
+    }
+    const comp = compRes.rows[0];
+
+    // Best-fit teaching resource for this competency (skip quizzes for the learn task).
+    const resRes = await query(
+      `SELECT r.id, r.title, r.format, r.duration_min
+       FROM resource_competency_map rcm
+       JOIN resources r ON r.id = rcm.resource_id
+       WHERE rcm.competency_id = $1 AND r.is_active = true AND r.format <> 'internal_quiz'
+       ORDER BY CASE rcm.fit_type WHEN 'primary' THEN 0 WHEN 'supplementary' THEN 1 ELSE 2 END,
+                r.duration_min ASC NULLS LAST
+       LIMIT 1`,
+      [competencyId]
+    );
+    const resource = resRes.rows[0] || null;
+
+    const session = await this.createSession({
+      learner_id: learnerId,
+      tenant_id: tenantId,
+      session_goal: `Learn "${comp.topic}": review, study the lesson, practice check questions, then reflect.`,
+      total_duration_min: 40,
+    });
+
+    const tasks = [
+      { task_order: 1, task_type: 'review', title: `Warm-up: recall what you know about ${comp.topic}`, competency_id: comp.competency_id, resource_id: null, duration_min: 8 },
+      { task_order: 2, task_type: 'learn', title: resource ? `Lesson: ${resource.title}` : `Lesson: ${comp.topic}`, competency_id: comp.competency_id, resource_id: resource?.id || null, duration_min: resource?.duration_min || 15 },
+      { task_order: 3, task_type: 'practice', title: `Practice Check: ${comp.topic}`, competency_id: comp.competency_id, resource_id: null, duration_min: 12 },
+      { task_order: 4, task_type: 'reflect', title: 'Session Reflection & Confidence Check', competency_id: null, resource_id: null, duration_min: 5 },
+    ];
+
+    for (const t of tasks) {
+      await query(
+        `INSERT INTO session_tasks (session_id, task_order, task_type, title, competency_id, resource_id, duration_min, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
+        [session.id, t.task_order, t.task_type, t.title, t.competency_id, t.resource_id, t.duration_min]
+      );
+    }
+
+    return this.getSessionDetails(session.id);
+  }
+
+  /**
    * Get session details with ordered tasks
    */
   static async getSessionDetails(sessionId: string) {

@@ -1,4 +1,5 @@
 import { query, pool } from '../db/index.js';
+import { SessionService } from './session.service.js';
 
 /**
  * Onboarding & Digital Twin bootstrap.
@@ -416,6 +417,34 @@ export class OnboardingService {
       },
       recommended_resource: resource,
       reason,
+    };
+  }
+
+  /**
+   * Start a lesson on the learner's next recommended competency: generate a
+   * focused session plan (review -> learn -> practice -> reflect) and return it.
+   */
+  static async startLesson(learnerId: string, tenantId: string, subject: string = DEFAULT_SUBJECT) {
+    const recommendation = await this.getNextRecommendation(learnerId, subject);
+
+    if (!recommendation.has_plan) {
+      return { started: false, reason: 'no_plan', recommendation };
+    }
+    if (recommendation.complete || !recommendation.next_competency) {
+      return { started: false, reason: 'plan_complete', recommendation };
+    }
+
+    const session = await SessionService.generateSessionPlanForCompetency(
+      learnerId,
+      tenantId,
+      recommendation.next_competency.competency_id
+    );
+
+    return {
+      started: true,
+      competency: recommendation.next_competency,
+      recommended_resource: recommendation.recommended_resource || null,
+      session,
     };
   }
 

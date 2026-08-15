@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Api } from '../api';
-import { LearningPlan, Recommendation } from '../types';
+import { LearningPlan, Recommendation, StartLessonResult } from '../types';
 
 interface Props {
   name: string;
@@ -25,6 +25,21 @@ export function DashboardPage({ name, onLogout }: Props) {
   const [rec, setRec] = useState<Recommendation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [session, setSession] = useState<StartLessonResult | null>(null);
+
+  async function startLesson() {
+    setStarting(true);
+    setError(null);
+    try {
+      const result = await Api.startLesson();
+      setSession(result);
+    } catch (e: any) {
+      setError(e.message || 'Could not start the lesson');
+    } finally {
+      setStarting(false);
+    }
+  }
 
   useEffect(() => {
     Promise.all([Api.getPlan(), Api.getNext()])
@@ -37,6 +52,37 @@ export function DashboardPage({ name, onLogout }: Props) {
   }, []);
 
   if (loading) return <div className="card"><p className="subtitle">Loading your learning plan…</p></div>;
+
+  // A lesson has been generated — show the session plan.
+  if (session?.started && session.session) {
+    const taskIcon: Record<string, string> = { review: '🔁', learn: '📘', practice: '✏️', reflect: '💭' };
+    return (
+      <div className="dashboard">
+        <div className="card highlight">
+          <div className="eyebrow">Lesson ready · {session.competency?.topic}</div>
+          <h1>Your session is set up 🚀</h1>
+          <p className="subtitle">{session.session.session.session_goal}</p>
+          <ul className="task-list">
+            {session.session.tasks.map((t) => (
+              <li key={t.id} className="task-item">
+                <span className="task-icon">{taskIcon[t.task_type] || '•'}</span>
+                <div className="plan-main">
+                  <span className="plan-topic">{t.title}</span>
+                  <span className="plan-grade">{t.task_type} · {t.duration_min} min</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="hint">
+            The interactive lesson runs in the LearnOS learner app. This session and its tasks are now
+            saved to your plan.
+          </p>
+          <button className="btn ghost" onClick={() => setSession(null)}>← Back to my plan</button>
+        </div>
+      </div>
+    );
+  }
+
   if (error) return <div className="card"><div className="error">{error}</div></div>;
 
   const progress = rec?.plan_progress;
@@ -82,8 +128,9 @@ export function DashboardPage({ name, onLogout }: Props) {
                 )}
               </div>
             )}
-            <button className="btn primary" disabled title="Session workspace is the learner client">
-              Start lesson →
+            {error && <div className="error">{error}</div>}
+            <button className="btn primary" onClick={startLesson} disabled={starting}>
+              {starting ? 'Preparing your lesson…' : 'Start lesson →'}
             </button>
           </>
         ) : (

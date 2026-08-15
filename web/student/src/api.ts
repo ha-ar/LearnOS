@@ -5,6 +5,7 @@ import {
   Preferences,
   Recommendation,
   RegisterInput,
+  StartLessonResult,
 } from './types';
 
 const TOKEN_KEY = 'learnos_student_token';
@@ -87,5 +88,13 @@ export const Api = {
       headers: authHeaders(),
     });
     return handle<{ recommendation: Recommendation }>(res);
+  },
+
+  async startLesson(subject = 'Mathematics'): Promise<StartLessonResult> {
+    const res = await fetch(`/api/onboarding/start-lesson?subject=${encodeURIComponent(subject)}`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return handle<StartLessonResult>(res);
   },
 };

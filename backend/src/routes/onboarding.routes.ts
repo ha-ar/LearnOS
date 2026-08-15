@@ -11,6 +11,7 @@ router.post('/register', OnboardingController.register);
 router.get('/placement-test', authenticateToken, OnboardingController.getPlacementTest);
 router.post('/placement', authenticateToken, OnboardingController.submitPlacement);
 router.get('/next', authenticateToken, OnboardingController.getNext);
+router.post('/start-lesson', authenticateToken, OnboardingController.startLesson);
 router.get('/plan', authenticateToken, OnboardingController.getPlan);
 
 export default router;
