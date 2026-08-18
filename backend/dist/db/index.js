@@ -69,7 +69,12 @@ const pilotUsersMap = new Map([
         }],
 ]);
 // In-Memory fallback store for session_events
+// 'session-mock-001' is a human-readable alias; the canonical id used for
+// storage and querying is the UUID below. EventService normalizes both the
+// alias and the UUID to this canonical id, so seeded events must be stored
+// under it or session-scoped queries return nothing.
 const mockSessionId = 'session-mock-001';
+const mockSessionCanonicalId = 'b4000000-0000-0000-0000-000000000001';
 const mockLearnerId = '10000000-0000-0000-0000-000000000001';
 const mockTenantId = '00000000-0000-0000-0000-000000000001';
 const mockCompId = 'c0000000-0000-0000-0000-000000000001';
@@ -115,7 +120,7 @@ const rawMockEvents = [
 const initialMockEvents = rawMockEvents.map((e, idx) => ({
     id: `e-mock-${100 + idx}`,
     event_type: e.event_type,
-    session_id: mockSessionId,
+    session_id: mockSessionCanonicalId,
     learner_id: mockLearnerId,
     tenant_id: mockTenantId,
     device_id: e.device_id || 'd0000000-0000-0000-0000-000000000001',
