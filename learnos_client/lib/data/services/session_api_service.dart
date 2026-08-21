@@ -37,7 +37,7 @@ class SessionApiService {
     String taskId,
     String status, // 'active' | 'completed' | 'skipped'
   ) async {
-    final res = await ApiClient.asyncPost(
+    final res = await ApiClient.asyncPatch(
       '/sessions/tasks/$taskId/status',
       {'status': status},
       requireAuth: true,

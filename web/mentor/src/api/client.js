@@ -47,7 +47,7 @@ export const api = {
     }
     try {
       const data = await post('/api/auth/login', { email, password });
-      setToken(data.token);
+      setToken(data.access_token);
       return data;
     } catch {
       setToken('mock-jwt-mentor-token');

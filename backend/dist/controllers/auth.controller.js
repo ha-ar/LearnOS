@@ -9,7 +9,7 @@ class AuthController {
      */
     static async register(req, res) {
         try {
-            const { email, password, name, role = 'learner', grade } = req.body;
+            const { email, password, name, role = 'learner', grade, curriculum_id } = req.body;
             if (!email || !password || !name) {
                 res.status(400).json({ error: 'Email, password, and name are required', code: 'MISSING_FIELDS' });
                 return;
@@ -23,6 +23,7 @@ class AuthController {
                 role,
                 tenant_id: tenantId,
                 grade,
+                curriculum_id,
             });
             res.status(201).json({ user, message: 'Account registered successfully' });
         }
@@ -115,6 +116,16 @@ class AuthController {
                 const profileRes = await (0, index_js_1.query)(`SELECT guardian_id, grade, curriculum_id, consent_given, consent_given_at
            FROM learner_profiles WHERE learner_id = $1`, [user.sub]);
                 userInfo.profile = profileRes.rows[0] || null;
+            }
+            // If user is a parent, attach their linked children so the parent portal
+            // knows which learner_id(s) to fetch reports for instead of guessing.
+            if (userInfo.role === 'parent') {
+                const childrenRes = await (0, index_js_1.query)(`SELECT u.id, u.name, lp.grade
+           FROM learner_profiles lp
+           JOIN users u ON u.id = lp.learner_id
+           WHERE lp.guardian_id = $1
+           ORDER BY u.name ASC`, [user.sub]);
+                userInfo.children = childrenRes.rows;
             }
             res.status(200).json({ user: userInfo });
         }

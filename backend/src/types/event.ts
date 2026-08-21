@@ -26,6 +26,7 @@ export enum EventType {
   AI_RESPONSE_RECEIVED = 'ai_response_received',
   AI_ESCALATION_SUGGESTED = 'ai_escalation_suggested',
   HINT_REQUESTED = 'hint_requested',
+  LEARN_YOUR_WAY_REQUESTED = 'learn_your_way_requested',
 
   // Check/assessment
   CHECK_STARTED = 'check_started',

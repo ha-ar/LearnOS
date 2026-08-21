@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Cpu, BookOpen, ShieldCheck, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Cpu, BookOpen, ShieldCheck, FileText, LogOut } from 'lucide-react';
 import { DashboardView } from './components/DashboardView';
 import { UserManagementView } from './components/UserManagementView';
 import { DeviceManagementView } from './components/DeviceManagementView';
 import { CurriculumConfigView } from './components/CurriculumConfigView';
 import { ConsentManagementView } from './components/ConsentManagementView';
 import { AuditLogView } from './components/AuditLogView';
+import { LoginPage } from './components/LoginPage';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 
 type NavTab = 'dashboard' | 'users' | 'devices' | 'curriculum' | 'consent' | 'audit';
 
-export const App: React.FC = () => {
+export const App: React.FC = () => (
+  <AuthProvider>
+    <AppShell />
+  </AuthProvider>
+);
+
+const AppShell: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <AdminDashboardApp /> : <LoginPage />;
+};
+
+const AdminDashboardApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const { user, logout } = useAuth();
 
   return (
     <div className="app-container">
@@ -65,10 +79,17 @@ export const App: React.FC = () => {
 
         <div className="nav-user">
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Centre Admin</div>
-            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>admin@learnos.pk</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{user?.name ?? 'Centre Admin'}</div>
+            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{user?.email ?? 'admin@learnos.pk'}</div>
           </div>
-          <span className="role-badge">ADMIN</span>
+          <span className="role-badge">{(user?.role ?? 'admin').toUpperCase()}</span>
+          <button
+            onClick={logout}
+            title="Log out"
+            style={{ background: 'transparent', color: 'var(--text-muted)', padding: '6px', display: 'flex' }}
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </header>
 

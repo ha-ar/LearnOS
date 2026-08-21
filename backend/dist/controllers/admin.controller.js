@@ -62,7 +62,7 @@ class AdminController {
      */
     static async createUser(req, res) {
         try {
-            const { email, password, name, role, grade, guardian_id } = req.body;
+            const { email, password, name, role, grade, guardian_id, curriculum_id } = req.body;
             const tenantId = req.user.tenant_id;
             if (!email || !password || !name || !role) {
                 res.status(400).json({ error: 'email, password, name, and role are required', code: 'MISSING_FIELDS' });
@@ -76,6 +76,7 @@ class AdminController {
                 tenant_id: tenantId,
                 grade,
                 guardian_id,
+                curriculum_id,
             });
             await admin_service_js_1.AdminService.logAction({
                 actor_id: req.user.sub,

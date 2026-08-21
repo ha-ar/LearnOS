@@ -10,6 +10,7 @@
     "test": "node --test dist/**/*.test.js",
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
+    "import:curriculum": "tsx scripts/import_curriculum.ts",
     "db:reset": "tsx scripts/reset.ts"
   },
   "dependencies": {
