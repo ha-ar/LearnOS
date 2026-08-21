@@ -58,7 +58,7 @@ export class AdminService {
   /**
    * User Management: Update user details
    */
-  static async updateUser(tenantId: string, userId: string, params: { name?: string; role?: string; grade?: string; is_active?: boolean }, adminId: string) {
+  static async updateUser(tenantId: string, userId: string, params: { name?: string; role?: string; grade?: string; curriculum_id?: string; is_active?: boolean }, adminId: string) {
     const userRes = await query(`SELECT * FROM users WHERE id = $1 AND tenant_id = $2`, [userId, tenantId]);
     if (userRes.rows.length === 0) {
       throw { status: 404, error: 'User not found', code: 'NOT_FOUND' };
@@ -76,11 +76,15 @@ export class AdminService {
       );
     }
 
-    if (params.grade && userRes.rows[0].role === 'learner') {
+    if ((params.grade || params.curriculum_id) && userRes.rows[0].role === 'learner') {
+      // COALESCE against the existing row so setting only one of
+      // grade/curriculum_id on an existing profile doesn't clobber the other.
       await query(
-        `INSERT INTO learner_profiles (learner_id, grade) VALUES ($1, $2)
-         ON CONFLICT (learner_id) DO UPDATE SET grade = EXCLUDED.grade`,
-        [userId, params.grade]
+        `INSERT INTO learner_profiles (learner_id, grade, curriculum_id) VALUES ($1, $2, $3)
+         ON CONFLICT (learner_id) DO UPDATE SET
+           grade = COALESCE(EXCLUDED.grade, learner_profiles.grade),
+           curriculum_id = COALESCE(EXCLUDED.curriculum_id, learner_profiles.curriculum_id)`,
+        [userId, params.grade || null, params.curriculum_id || null]
       );
     }
 
@@ -313,7 +317,7 @@ export class AdminService {
   static async getTenantConfig(tenantId: string) {
     const res = await query(
       `SELECT tc.id, tc.tenant_id, tc.active_curriculum_id, tc.active_subjects, tc.grade_min, tc.grade_max, tc.settings, tc.updated_at,
-              c.name as curriculum_name, c.code as curriculum_code
+              c.name as active_curriculum_name
        FROM tenant_config tc
        LEFT JOIN curricula c ON c.id = tc.active_curriculum_id
        WHERE tc.tenant_id = $1`,

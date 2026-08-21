@@ -45,6 +45,23 @@ class ApiClient {
     }
   }
 
+  static asyncPatch(String path, Map<String, dynamic> body, {bool requireAuth = false}) async {
+    final url = Uri.parse('$baseUrl$path');
+    try {
+      final response = await http
+          .patch(
+            url,
+            headers: _getHeaders(requireAuth: requireAuth),
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return _processResponse(response);
+    } catch (e) {
+      throw Exception('Network error connecting to $url: $e');
+    }
+  }
+
   static asyncGet(String path, {bool requireAuth = true}) async {
     final url = Uri.parse('$baseUrl$path');
     try {

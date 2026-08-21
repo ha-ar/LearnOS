@@ -25,29 +25,31 @@ class AiService {
         const ai = this.getAiClient();
         const adaptedForText = `${learner_name} • ${grade_level} (${mastery_level}) • ${explanation_style.toUpperCase()} • ${pacing_speed}`;
         if (!ai) {
-            // Deterministic Adaptive Fallback
+            // Deterministic Adaptive Fallback — genuinely varies by style, pacing, and mastery
+            // (used whenever no Gemini API key is configured).
             return {
                 concept,
                 style: explanation_style,
-                explanation: `Here is how ${concept} works in ${topic}:\n\n` +
-                    `Imagine slicing a pizza into 4 equal slices. Each slice is 1/4 of the whole pizza. If you take 2 slices, you have 2/4, which is the exact same amount as 1/2 of the whole pizza! That is what ${concept} is all about — expressing the exact same quantity in different forms.`,
-                key_takeaways: [
-                    `${concept} represents equal parts of a whole set or shape.`,
-                    'Multiplying or dividing top and bottom by the same number keeps the value identical.',
-                    'Always look for common factors when simplifying.'
-                ],
-                quick_check_question: `If you have 3 out of 6 slices of a pie, what is the simplest fraction that represents your pie?`,
+                ...this.buildFallbackExplanation(concept, topic, explanation_style, mastery_level, pacing_speed),
                 adapted_for: adaptedForText,
             };
         }
+        const pacingInstructions = {
+            'Gentle Pace': 'Go slowly. Break the idea into extra small steps, reassure the learner often, and avoid introducing more than one new idea per sentence.',
+            'Balanced Pace': 'Use a natural, moderate pace suitable for a student meeting this idea for the first time this week.',
+            'Accelerated Pace': 'Move quickly and concisely. Assume the learner picks things up fast — skip basic setup and get to the interesting part, and add one stretch/challenge idea at the end.',
+        };
+        const targetPacingPrompt = pacingInstructions[pacing_speed] || pacingInstructions['Balanced Pace'];
         try {
             const prompt = `Topic: ${topic}
 Concept to Explain: "${concept}"
 Learner: ${learner_name} (${grade_level}, Current Mastery Level: ${mastery_level})
 Explanation Style Requested: ${explanation_style.toUpperCase()}
+Requested Pacing: ${pacing_speed}
 
 Instructions:
 ${targetStylePrompt}
+Pacing: ${targetPacingPrompt}
 
 Respond strictly in JSON with these keys:
 {
@@ -56,12 +58,13 @@ Respond strictly in JSON with these keys:
   "quick_check_question": "One quick single-line understanding check question for the student"
 }`;
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents: prompt,
                 config: {
                     temperature: 0.7,
                     responseMimeType: 'application/json',
                     maxOutputTokens: 600,
+                    thinkingConfig: { thinkingLevel: genai_1.ThinkingLevel.MINIMAL },
                 },
             });
             const parsed = JSON.parse(response.text || '{}');
@@ -79,12 +82,83 @@ Respond strictly in JSON with these keys:
             return {
                 concept,
                 style: explanation_style,
-                explanation: `Let's break down **${concept}** together!\n\nWhen we look at ${topic}, ${concept} helps us compare values fairly.`,
-                key_takeaways: [`${concept} helps structure mathematical relationships.`],
-                quick_check_question: `Why is understanding ${concept} useful in math?`,
+                ...this.buildFallbackExplanation(concept, topic, explanation_style, mastery_level, pacing_speed),
                 adapted_for: adaptedForText,
             };
         }
+    }
+    /**
+     * Deterministic Learn Your Way explanation builder — used whenever Gemini is
+     * unavailable (no API key, or the API call fails). Genuinely varies by
+     * explanation_style, pacing_speed, and mastery_level so switching any of
+     * these controls actually changes the output, instead of always returning
+     * the same canned paragraph.
+     */
+    static buildFallbackExplanation(concept, topic, style, masteryLevel, pacingSpeed) {
+        const paceIntro = {
+            'Gentle Pace': `Let's take this nice and slow — one small step at a time. `,
+            'Balanced Pace': '',
+            'Accelerated Pace': `Quick version, since you're moving fast today: `,
+        };
+        const intro = paceIntro[pacingSpeed] ?? '';
+        const isAdvanced = masteryLevel === 'proficient' || masteryLevel === 'mastered';
+        const stretchLine = isAdvanced
+            ? `\n\n**Stretch challenge:** since you already have a good handle on the basics, try applying ${concept} to a case with bigger numbers or an extra step before checking the quick question below.`
+            : '';
+        const scaffoldLine = masteryLevel === 'emerging'
+            ? `\n\nTake your time with this one — it's completely normal for ${concept} to feel new right now.`
+            : '';
+        const extraStep = pacingSpeed === 'Gentle Pace'
+            ? `\n\nBefore moving on, try re-stating ${concept} in your own words out loud — that's a great way to check it stuck.`
+            : '';
+        const byStyle = {
+            eli5: {
+                explanation: `${intro}Imagine ${concept} is like sharing a bag of candy fairly with your friends. In ${topic}, ${concept} is just a grown-up way of describing "sharing things equally so nobody feels left out." ` +
+                    `If you and a friend split things the exact same way but count them differently, you're both still getting a fair share — that's the heart of ${concept}!${scaffoldLine}${stretchLine}`,
+                key_takeaways: [
+                    `${concept} is about fair, equal sharing — just described with numbers.`,
+                    `Two things can look different but still mean the exact same amount.`,
+                    `If it feels confusing, picture real objects (candy, pizza, toys) being shared.`,
+                ],
+                quick_check_question: `If you shared 10 candies equally between 2 friends, how many would each friend get — and how does that relate to ${concept}?`,
+            },
+            step_by_step: {
+                explanation: `${intro}Here's ${concept} broken into clear steps:\n\n` +
+                    `1. Identify what ${topic} problem you're looking at.\n` +
+                    `2. Write down exactly what you know and what ${concept} asks you to find.\n` +
+                    `3. Apply the rule for ${concept} one small piece at a time — don't skip steps.\n` +
+                    `4. Check your answer by working it backwards to see if it still makes sense.${extraStep}${stretchLine}`,
+                key_takeaways: [
+                    `Always write out each step for ${concept} — don't do it in your head at first.`,
+                    `Step 4 (checking backwards) catches most mistakes.`,
+                    `The order of the steps matters — skipping one is the most common error.`,
+                ],
+                quick_check_question: `What is step 1 you should always do before solving a ${concept} problem?`,
+            },
+            real_world: {
+                explanation: `${intro}Think about ${concept} the next time you're splitting a bill with friends, dividing up snacks, or checking a discount at a shop. ` +
+                    `${topic} shows up constantly in everyday life — ${concept} specifically is the tool you reach for whenever something needs to be shared, compared, or scaled fairly. ` +
+                    `Once you notice it in daily life, it stops feeling like "just math" and starts feeling like common sense.${scaffoldLine}${stretchLine}`,
+                key_takeaways: [
+                    `${concept} shows up in shopping, cooking, and splitting costs with friends.`,
+                    `Real-world practice makes ${concept} much easier to remember than formulas alone.`,
+                    `Try spotting one real example of ${concept} today outside of homework.`,
+                ],
+                quick_check_question: `Can you think of one moment this week where ${concept} would actually be useful in real life?`,
+            },
+            deep_dive: {
+                explanation: `${intro}Formally, ${concept} within ${topic} rests on a precise rule: the relationship holds true as long as the same operation is applied consistently to every part involved. ` +
+                    `This isn't a coincidence — it follows directly from the underlying mathematical properties that define ${topic}. ` +
+                    `Understanding *why* the rule works (not just *that* it works) is what lets you apply ${concept} to problems you haven't seen before.${stretchLine}`,
+                key_takeaways: [
+                    `${concept} follows from a consistent underlying rule, not memorisation.`,
+                    `Applying the same operation to every part of the problem preserves the relationship.`,
+                    `Understanding the "why" lets you handle unfamiliar ${topic} problems, not just practiced ones.`,
+                ],
+                quick_check_question: `Why does ${concept} still hold true even when the numbers involved get much larger?`,
+            },
+        };
+        return byStyle[style] || byStyle.real_world;
     }
     /**
      * Socratic AI Learning Tutor Response Generator
@@ -139,12 +213,13 @@ Your Core Rules:
                 { role: 'user', parts: [{ text: prompt }] },
             ];
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents,
                 config: {
                     systemInstruction,
                     temperature: 0.7,
                     maxOutputTokens: 250,
+                    thinkingConfig: { thinkingLevel: genai_1.ThinkingLevel.MINIMAL },
                 },
             });
             const replyText = response.text || this.getFallbackTutoringReply(prompt, topic, learner_name);
@@ -156,7 +231,7 @@ Your Core Rules:
                 socratic_hint_level: 1,
                 safety_passed: postSafety.safe,
                 escalate_to_mentor: false,
-                model_used: 'gemini-2.5-flash',
+                model_used: 'gemini-3.6-flash',
             };
         }
         catch (err) {
@@ -184,10 +259,10 @@ Your Core Rules:
         }
         try {
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents: `Question: "${questionText}"
 Generate a Hint Level ${hintLevel} (1 = subtle clue, 2 = structural clue, 3 = step-by-step breakdown). Do NOT give the final answer. Keep it under 2 sentences.`,
-                config: { temperature: 0.5, maxOutputTokens: 150 },
+                config: { temperature: 0.5, maxOutputTokens: 150, thinkingConfig: { thinkingLevel: genai_1.ThinkingLevel.MINIMAL } },
             });
             return response.text || 'Look closely at the numbers and try breaking them down into equal parts!';
         }
@@ -207,14 +282,14 @@ Generate a Hint Level ${hintLevel} (1 = subtle clue, 2 = structural clue, 3 = st
         }
         try {
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents: `Learner: ${learner_name}
 Topics Covered: ${topics.join(', ')}
 Sessions Completed: ${sessions_completed}
 Mentor Note: "${mentor_notes || 'Great effort this week!'}"
 
 Write a warm, 3-sentence encouraging summary for the parent's weekly report. Highlight their effort and key accomplishment in plain, positive language.`,
-                config: { temperature: 0.7, maxOutputTokens: 200 },
+                config: { temperature: 0.7, maxOutputTokens: 200, thinkingConfig: { thinkingLevel: genai_1.ThinkingLevel.MINIMAL } },
             });
             return response.text || `${firstName} had a productive week mastering ${topics.join(', ')} across ${sessions_completed} sessions!`;
         }
@@ -245,7 +320,7 @@ Write a warm, 3-sentence encouraging summary for the parent's weekly report. Hig
         const ai = this.getAiClient();
         // Deterministic fallback for when Gemini is unavailable
         if (!ai) {
-            return this.getFallbackLesson(topic, grade_level, subject);
+            return this.getFallbackLesson(topic, grade_level, subject, mastery_level);
         }
         try {
             const prompt = `You are a curriculum expert generating a structured lesson for LearnOS, an AI-powered learning centre for students aged 10-16.
@@ -281,18 +356,19 @@ Respond ONLY with valid JSON in this exact schema:
   "quick_check": "One multiple-choice or short-answer question to verify understanding"
 }`;
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.6-flash',
                 contents: prompt,
                 config: {
                     temperature: 0.6,
                     responseMimeType: 'application/json',
                     maxOutputTokens: 1200,
+                    thinkingConfig: { thinkingLevel: genai_1.ThinkingLevel.MINIMAL },
                 },
             });
             const parsed = JSON.parse(response.text || '{}');
             // Validate structure
             if (!parsed.title || !parsed.sections || !Array.isArray(parsed.sections)) {
-                return this.getFallbackLesson(topic, grade_level, subject);
+                return this.getFallbackLesson(topic, grade_level, subject, mastery_level);
             }
             return {
                 title: parsed.title,
@@ -307,37 +383,62 @@ Respond ONLY with valid JSON in this exact schema:
         }
         catch (err) {
             console.warn('Gemini lesson generation failed, using fallback:', err?.message || err);
-            return this.getFallbackLesson(topic, grade_level, subject);
+            return this.getFallbackLesson(topic, grade_level, subject, mastery_level);
         }
     }
     /**
-     * Deterministic fallback lesson generator (works without Gemini API key)
+     * Deterministic fallback lesson generator (works without Gemini API key).
+     * Varies depth by mastery_level so the same topic doesn't read identically
+     * for a learner meeting it for the first time vs. one who's already proficient.
      */
-    static getFallbackLesson(topic, gradeLevel, subject) {
+    static getFallbackLesson(topic, gradeLevel, subject, masteryLevel = 'emerging') {
+        const isNew = masteryLevel === 'emerging';
+        const isAdvanced = masteryLevel === 'proficient' || masteryLevel === 'mastered';
+        const introByMastery = isNew
+            ? `Welcome! ${topic} is probably new to you, so we'll build it up slowly, one small idea at a time — an important concept in ${subject} for ${gradeLevel}.`
+            : isAdvanced
+                ? `Welcome back to ${topic}! You've already got a solid base here, so this lesson moves a bit faster and adds a challenge at the end — an important concept in ${subject} for ${gradeLevel}.`
+                : `Welcome! In this lesson you'll strengthen your understanding of ${topic} — an important concept in ${subject} for ${gradeLevel}.`;
+        const howItWorksBody = isNew
+            ? `To understand ${topic}, start with something you know well — like sharing food or money. Imagine you have 12 chocolates to share equally with 3 friends. Each friend gets 4 chocolates. This is the same kind of reasoning we use in ${topic}: looking for equal groups and fair relationships between numbers.`
+            : isAdvanced
+                ? `You already know the basics of ${topic}, so let's push a bit further: try applying the same reasoning to numbers that don't divide as neatly, or to a problem with two steps instead of one. That's usually where ${topic} gets genuinely useful.`
+                : `Let's reinforce ${topic} with a slightly trickier example than last time — the same core idea applies, just with numbers that require a bit more care. Walk through it step by step rather than jumping to the answer.`;
+        const sections = [
+            {
+                heading: 'What Is It?',
+                body: `${topic} is a fundamental concept in ${subject}. Think of it like dividing something fair and equal among friends. When we talk about ${topic}, we are describing a relationship between numbers or quantities that follows clear rules.`,
+            },
+            {
+                heading: 'How Does It Work?',
+                body: howItWorksBody,
+            },
+            {
+                heading: isAdvanced ? 'Challenge Yourself' : 'Real-World Examples',
+                body: isAdvanced
+                    ? `Try spotting ${topic} in a situation with more than one step — like splitting a bill three ways *after* a discount is applied, or comparing two different sale percentages. That's where mastering ${topic} really pays off.`
+                    : `You use ${topic} every day without realising it! When you split a bill with friends, check if a sale is truly 50% off, or measure ingredients for a recipe — you are applying the logic of ${topic}. Understanding this deeply will help you solve problems faster in tests and in daily life.`,
+            },
+        ];
+        const keyPoints = [
+            `${topic} is built on the idea of equal, fair relationships between numbers.`,
+            'Always check your answer by working backwards — does it make sense?',
+            isAdvanced
+                ? `Now try ${topic} with multi-step problems to deepen your understanding.`
+                : `Practise with real objects (coins, fruit, paper folding) to build confidence.`,
+        ];
+        const quickCheck = isAdvanced
+            ? `Can you create your own two-step ${topic} problem and solve it, explaining each step?`
+            : isNew
+                ? `In your own words, what does ${topic} mean? Try explaining it like you would to a friend.`
+                : `Can you give one example from your daily life where ${topic} would be useful? Think about food, shopping, or sports.`;
         return {
             title: `Understanding ${topic}`,
-            intro: `Welcome! In this lesson you will explore ${topic} — an important concept in ${subject} for ${gradeLevel}.`,
-            sections: [
-                {
-                    heading: 'What Is It?',
-                    body: `${topic} is a fundamental concept in ${subject}. Think of it like dividing something fair and equal among friends. When we talk about ${topic}, we are describing a relationship between numbers or quantities that follows clear rules.`,
-                },
-                {
-                    heading: 'How Does It Work?',
-                    body: `To understand ${topic}, start with something you know well — like sharing food or money. Imagine you have 12 chocolates to share equally with 3 friends. Each friend gets 4 chocolates. This is the same kind of reasoning we use in ${topic}: looking for equal groups and fair relationships between numbers.`,
-                },
-                {
-                    heading: 'Real-World Examples',
-                    body: `You use ${topic} every day without realising it! When you split a bill with friends, check if a sale is truly 50% off, or measure ingredients for a recipe — you are applying the logic of ${topic}. Understanding this deeply will help you solve problems faster in tests and in daily life.`,
-                },
-            ],
-            key_points: [
-                `${topic} is built on the idea of equal, fair relationships between numbers.`,
-                'Always check your answer by working backwards — does it make sense?',
-                `Practise with real objects (coins, fruit, paper folding) to build confidence.`,
-            ],
+            intro: introByMastery,
+            sections,
+            key_points: keyPoints,
             summary: `You have now learned the core ideas behind ${topic} and seen how they apply to real-life situations.`,
-            quick_check: `Can you give one example from your daily life where ${topic} would be useful? Think about food, shopping, or sports.`,
+            quick_check: quickCheck,
             competency: topic,
             grade_level: gradeLevel,
         };

@@ -1,4 +1,5 @@
 import { User, Device, Curriculum, TenantConfig, DashboardStats, AtRiskLearner, ConsentRecord, AuditLogItem } from './types';
+import { API_ROOT, getToken } from './auth';
 import {
   mockDashboardStats,
   mockAtRiskLearners,
@@ -10,18 +11,20 @@ import {
   mockAuditLogs,
 } from './mockData';
 
-const API_BASE = '/api/admin';
+const API_BASE = `${API_ROOT}/api/admin`;
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('learnos_admin_token') || 'mock-jwt-admin-token';
+  const token = getToken();
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
 export class AdminApi {
-  static useMock = true; // Fallback toggle for demonstration / dev
+  // Env-driven, matching the mentor/parent apps: defaults to mock unless
+  // VITE_USE_MOCK is explicitly set to 'false'.
+  static useMock = import.meta.env.VITE_USE_MOCK !== 'false';
 
   static async getDashboardStats(): Promise<DashboardStats> {
     if (this.useMock) return mockDashboardStats;

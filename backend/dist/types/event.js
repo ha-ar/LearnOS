@@ -27,6 +27,7 @@ var EventType;
     EventType["AI_RESPONSE_RECEIVED"] = "ai_response_received";
     EventType["AI_ESCALATION_SUGGESTED"] = "ai_escalation_suggested";
     EventType["HINT_REQUESTED"] = "hint_requested";
+    EventType["LEARN_YOUR_WAY_REQUESTED"] = "learn_your_way_requested";
     // Check/assessment
     EventType["CHECK_STARTED"] = "check_started";
     EventType["CHECK_QUESTION_ANSWERED"] = "check_question_answered";

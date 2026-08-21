@@ -250,6 +250,7 @@ export class AuthService {
     tenant_id: string;
     grade?: string;
     guardian_id?: string;
+    curriculum_id?: string;
   }) {
     const existing = await query(`SELECT id FROM users WHERE LOWER(email) = LOWER($1)`, [params.email]);
     if (existing.rows.length > 0) {
@@ -270,10 +271,22 @@ export class AuthService {
 
     // If role is learner, populate learner_profile
     if (params.role === 'learner') {
+      // Default to the tenant's configured active curriculum when the
+      // caller doesn't explicitly pick one — keeps new learners aligned
+      // with whatever curriculum an admin has activated for the centre.
+      let curriculumId = params.curriculum_id || null;
+      if (!curriculumId) {
+        const tenantConfig = await query(
+          `SELECT active_curriculum_id FROM tenant_config WHERE tenant_id = $1`,
+          [params.tenant_id]
+        );
+        curriculumId = tenantConfig.rows[0]?.active_curriculum_id || null;
+      }
+
       await query(
-        `INSERT INTO learner_profiles (learner_id, guardian_id, grade)
-         VALUES ($1, $2, $3)`,
-        [user.id, params.guardian_id || null, params.grade || null]
+        `INSERT INTO learner_profiles (learner_id, guardian_id, grade, curriculum_id)
+         VALUES ($1, $2, $3, $4)`,
+        [user.id, params.guardian_id || null, params.grade || null, curriculumId]
       );
     }
 

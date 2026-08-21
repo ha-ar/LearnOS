@@ -65,7 +65,7 @@ export class AdminController {
    */
   static async createUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { email, password, name, role, grade, guardian_id } = req.body;
+      const { email, password, name, role, grade, guardian_id, curriculum_id } = req.body;
       const tenantId = req.user!.tenant_id;
 
       if (!email || !password || !name || !role) {
@@ -81,6 +81,7 @@ export class AdminController {
         tenant_id: tenantId,
         grade,
         guardian_id,
+        curriculum_id,
       });
 
       await AdminService.logAction({

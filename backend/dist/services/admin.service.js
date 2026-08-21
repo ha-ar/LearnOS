@@ -56,9 +56,13 @@ class AdminService {
              updated_at = NOW()
          WHERE id = $4 AND tenant_id = $5`, [params.name || null, params.role || null, params.is_active !== undefined ? params.is_active : null, userId, tenantId]);
         }
-        if (params.grade && userRes.rows[0].role === 'learner') {
-            await (0, index_js_1.query)(`INSERT INTO learner_profiles (learner_id, grade) VALUES ($1, $2)
-         ON CONFLICT (learner_id) DO UPDATE SET grade = EXCLUDED.grade`, [userId, params.grade]);
+        if ((params.grade || params.curriculum_id) && userRes.rows[0].role === 'learner') {
+            // COALESCE against the existing row so setting only one of
+            // grade/curriculum_id on an existing profile doesn't clobber the other.
+            await (0, index_js_1.query)(`INSERT INTO learner_profiles (learner_id, grade, curriculum_id) VALUES ($1, $2, $3)
+         ON CONFLICT (learner_id) DO UPDATE SET
+           grade = COALESCE(EXCLUDED.grade, learner_profiles.grade),
+           curriculum_id = COALESCE(EXCLUDED.curriculum_id, learner_profiles.curriculum_id)`, [userId, params.grade || null, params.curriculum_id || null]);
         }
         await AdminService.logAction({
             actor_id: adminId,
@@ -237,7 +241,7 @@ class AdminService {
      */
     static async getTenantConfig(tenantId) {
         const res = await (0, index_js_1.query)(`SELECT tc.id, tc.tenant_id, tc.active_curriculum_id, tc.active_subjects, tc.grade_min, tc.grade_max, tc.settings, tc.updated_at,
-              c.name as curriculum_name, c.code as curriculum_code
+              c.name as active_curriculum_name
        FROM tenant_config tc
        LEFT JOIN curricula c ON c.id = tc.active_curriculum_id
        WHERE tc.tenant_id = $1`, [tenantId]);

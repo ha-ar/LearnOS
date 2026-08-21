@@ -8,6 +8,11 @@ export function setToken(t) { localStorage.setItem('learnos_parent_token', t); }
 export function clearToken() { localStorage.removeItem('learnos_parent_token'); }
 export function isLoggedIn() { return !!getToken(); }
 
+// The default/fallback child id (matches the mock dataset's single-child shape).
+// In real mode this is overwritten with the parent's actual linked child on login.
+export function getActiveChildId() { return localStorage.getItem('learnos_parent_child_id') || 'learner-001'; }
+function setActiveChildId(id) { if (id) localStorage.setItem('learnos_parent_child_id', id); }
+
 async function request(method, path, body) {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -40,24 +45,36 @@ export const api = {
       }
       throw new Error('Invalid parent email or password');
     }
+    const data = await post('/api/auth/login', { email, password });
+    setToken(data.access_token);
+
+    // The login response doesn't carry which child(ren) this parent is linked
+    // to — fetch /me to resolve that, and shape `user` to match what the UI
+    // already expects (child_name/child_id/child_grade), same as the mock data.
     try {
-      const data = await post('/api/auth/login', { email, password });
-      setToken(data.token);
-      return data;
-    } catch {
-      setToken('mock-jwt-parent-token');
-      return {
-        token: 'mock-jwt-parent-token',
-        user: MOCK_PARENT_DATA.parent_user,
-      };
+      const me = await get('/api/auth/me');
+      const primaryChild = me.user?.children?.[0];
+      if (primaryChild) {
+        setActiveChildId(primaryChild.id);
+        data.user = {
+          ...data.user,
+          child_id: primaryChild.id,
+          child_name: primaryChild.name,
+          child_grade: primaryChild.grade,
+        };
+      }
+    } catch (err) {
+      console.warn('Could not resolve linked child for parent account:', err);
     }
+
+    return data;
   },
 
   logout() {
     clearToken();
   },
 
-  async getLatestReport(learnerId = 'learner-001') {
+  async getLatestReport(learnerId = getActiveChildId()) {
     if (USE_MOCK) {
       await delay(250);
       return { report: MOCK_PARENT_DATA.latest_report };
@@ -69,7 +86,7 @@ export const api = {
     }
   },
 
-  async getReport(weekLabel, learnerId = 'learner-001') {
+  async getReport(weekLabel, learnerId = getActiveChildId()) {
     if (USE_MOCK) {
       await delay(200);
       return { report: MOCK_PARENT_DATA.latest_report };
@@ -81,7 +98,7 @@ export const api = {
     }
   },
 
-  async listReports(learnerId = 'learner-001') {
+  async listReports(learnerId = getActiveChildId()) {
     if (USE_MOCK) {
       await delay(180);
       return { reports: MOCK_PARENT_DATA.past_reports };
@@ -93,7 +110,7 @@ export const api = {
     }
   },
 
-  async getTermOverview(learnerId = 'learner-001') {
+  async getTermOverview(learnerId = getActiveChildId()) {
     if (USE_MOCK) {
       await delay(200);
       return MOCK_PARENT_DATA.term_overview;
@@ -105,7 +122,7 @@ export const api = {
     }
   },
 
-  async sendEmail(weekLabel, learnerId = 'learner-001') {
+  async sendEmail(weekLabel, learnerId = getActiveChildId()) {
     if (USE_MOCK) {
       await delay(300);
       return {

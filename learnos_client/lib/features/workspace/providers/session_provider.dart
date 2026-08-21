@@ -24,6 +24,8 @@ class SessionTask {
   final TaskStatus status;
   final String? competencyId;
   final String? resourceId;
+  final String? topic;
+  final String? subject;
 
   const SessionTask({
     required this.id,
@@ -34,6 +36,8 @@ class SessionTask {
     required this.status,
     this.competencyId,
     this.resourceId,
+    this.topic,
+    this.subject,
   });
 
   SessionTask copyWith({TaskStatus? status}) {
@@ -46,6 +50,8 @@ class SessionTask {
       status: status ?? this.status,
       competencyId: competencyId,
       resourceId: resourceId,
+      topic: topic,
+      subject: subject,
     );
   }
 }
@@ -282,20 +288,27 @@ class SessionNotifier extends StateNotifier<SessionState> {
           status: status,
           competencyId: t['competency_id'],
           resourceId: t['resource_id'],
+          topic: t['topic'],
+          subject: t['subject'],
         );
       }).toList();
 
       final activeIdx = tasks.indexWhere((t) => t.status == TaskStatus.active);
+      // Prefer the active task's own topic/subject (now returned by the backend
+      // joined against the competency it's tied to); fall back to the first task
+      // that actually has one, then to a generic default — never a hardcoded topic.
+      final topicSourceTask = (activeIdx >= 0 ? tasks[activeIdx] : null) ??
+          tasks.cast<SessionTask?>().firstWhere((t) => t?.topic != null, orElse: () => null);
 
       state = state.copyWith(
         sessionId: sessionObj['id'] ?? 'sess-001',
         learnerId: user.id,
         learnerName: user.name,
         tenantId: user.tenantId,
-        grade: user.role == 'learner' ? 'Grade 6' : 'Grade 6',
-        subject: 'Mathematics',
-        topic: sessionObj['session_goal']?.toString().contains('Fractions') == true ? 'Equivalent Fractions' : 'Mathematics',
-        competency: 'Equivalent Fractions',
+        grade: user.grade ?? 'Grade 6',
+        subject: topicSourceTask?.subject ?? 'Mathematics',
+        topic: topicSourceTask?.topic ?? 'Mathematics',
+        competency: topicSourceTask?.topic ?? state.competency,
         masteryLevel: twin['summary']?['primary_competency_mastery'] ?? 'emerging',
         goal: sessionObj['session_goal'] ?? 'Review fractions; learn equivalent fractions; practice; reflect.',
         tasks: tasks.isNotEmpty ? tasks : state.tasks,
