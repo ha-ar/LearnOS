@@ -8,6 +8,7 @@ router.use(authenticateToken);
 
 // Digital Twin Summary & Competency Reads
 router.get('/:learner_id', TwinController.getTwinSummary);
+router.get('/:learner_id/course-progress', TwinController.getCourseProgress);
 router.get('/:learner_id/competencies', TwinController.getCompetencies);
 router.get('/:learner_id/competencies/:competency_id', TwinController.getCompetencyById);
 router.patch('/:learner_id/competencies/:competency_id', requireRole(['mentor', 'admin', 'superadmin']), TwinController.updateCompetency);

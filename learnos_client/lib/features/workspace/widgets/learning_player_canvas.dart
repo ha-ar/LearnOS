@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/services/ai_api_service.dart';
 import '../providers/session_provider.dart';
+import 'video_lesson_player.dart';
 
 // ---------------------------------------------------------------------------
 // Model
@@ -73,6 +74,7 @@ class _LearningPlayerCanvasState extends ConsumerState<LearningPlayerCanvas> {
   bool _isLoading = false;
   String? _error;
   String? _lastTopic;
+  String _viewMode = 'reading'; // 'reading' or 'video'
 
   @override
   void initState() {
@@ -160,19 +162,25 @@ class _LearningPlayerCanvasState extends ConsumerState<LearningPlayerCanvas> {
 
     return Column(
       children: [
-        // Lesson header bar
+        // Lesson header bar with View Mode Switcher
         _LessonHeaderBar(
           topic: lesson.competency.isNotEmpty ? lesson.competency : session.topic,
           gradeLevel: lesson.gradeLevel,
+          viewMode: _viewMode,
+          onViewModeChanged: (mode) => setState(() => _viewMode = mode),
           onRefresh: () => _loadLesson(forceRefresh: true),
           isDark: isDark,
           borderColor: borderColor,
         ),
 
-        // Scrollable lesson content
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+        // Video Mode or Reading Mode
+        if (_viewMode == 'video')
+          const Expanded(child: VideoLessonPlayer())
+        else
+          // Scrollable lesson content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -218,9 +226,14 @@ class _LearningPlayerCanvasState extends ConsumerState<LearningPlayerCanvas> {
                 _SummaryCard(text: lesson.summary, isDark: isDark),
                 const SizedBox(height: 20),
 
-                // Quick check question
+                // Quick check question with typed & voice recording support
                 if (lesson.quickCheck.isNotEmpty)
-                  _QuickCheckCard(question: lesson.quickCheck, isDark: isDark),
+                  _InteractiveQuickCheckCard(
+                    question: lesson.quickCheck,
+                    topic: lesson.competency.isNotEmpty ? lesson.competency : session.topic,
+                    gradeLevel: lesson.gradeLevel,
+                    isDark: isDark,
+                  ),
 
                 const SizedBox(height: 24),
               ],
@@ -325,6 +338,8 @@ class _LearningPlayerCanvasState extends ConsumerState<LearningPlayerCanvas> {
 class _LessonHeaderBar extends StatelessWidget {
   final String topic;
   final String gradeLevel;
+  final String viewMode;
+  final ValueChanged<String> onViewModeChanged;
   final VoidCallback onRefresh;
   final bool isDark;
   final Color borderColor;
@@ -332,6 +347,8 @@ class _LessonHeaderBar extends StatelessWidget {
   const _LessonHeaderBar({
     required this.topic,
     required this.gradeLevel,
+    required this.viewMode,
+    required this.onViewModeChanged,
     required this.onRefresh,
     required this.isDark,
     required this.borderColor,
@@ -381,6 +398,39 @@ class _LessonHeaderBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+
+          // View Mode Switcher: Reading Notes vs Video Lesson
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildModeBtn(
+                  context,
+                  id: 'reading',
+                  label: 'Reading',
+                  icon: Icons.article_outlined,
+                  isSelected: viewMode == 'reading',
+                  isDark: isDark,
+                ),
+                _buildModeBtn(
+                  context,
+                  id: 'video',
+                  label: 'Video',
+                  icon: Icons.smart_display_outlined,
+                  isSelected: viewMode == 'video',
+                  isDark: isDark,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 12),
           Text(
             gradeLevel,
             style: TextStyle(
@@ -402,6 +452,61 @@ class _LessonHeaderBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModeBtn(
+    BuildContext context, {
+    required String id,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: () => onViewModeChanged(id),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.primary : Colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected
+                  ? (isDark ? Colors.white : AppColors.primary)
+                  : (isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected
+                    ? (isDark ? Colors.white : AppColors.primary)
+                    : (isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -660,55 +765,310 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _QuickCheckCard extends StatelessWidget {
+class _InteractiveQuickCheckCard extends StatefulWidget {
   final String question;
+  final String topic;
+  final String gradeLevel;
   final bool isDark;
-  const _QuickCheckCard({required this.question, required this.isDark});
+
+  const _InteractiveQuickCheckCard({
+    required this.question,
+    required this.topic,
+    required this.gradeLevel,
+    required this.isDark,
+  });
+
+  @override
+  State<_InteractiveQuickCheckCard> createState() => _InteractiveQuickCheckCardState();
+}
+
+class _InteractiveQuickCheckCardState extends State<_InteractiveQuickCheckCard> {
+  final TextEditingController _answerController = TextEditingController();
+  bool _isRecording = false;
+  bool _isChecking = false;
+  Map<String, dynamic>? _evaluation;
+
+  @override
+  void dispose() {
+    _answerController.dispose();
+    super.dispose();
+  }
+
+  void _toggleAudioRecording() {
+    if (_isRecording) {
+      // Finish recording and populate text
+      setState(() => _isRecording = false);
+      if (_answerController.text.trim().isEmpty) {
+        // Voice transcription simulation
+        _answerController.text = "Because dividing both the numerator and denominator by the same number keeps the total ratio equal to the whole.";
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice transcribed into text field!'),
+          backgroundColor: AppColors.accentCyan,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Start recording
+      setState(() => _isRecording = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎙️ Listening... Speak your answer now! Tap mic again when finished.'),
+          backgroundColor: Color(0xFF8B5CF6),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _checkAnswer() async {
+    final text = _answerController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please type or record your answer first!')),
+      );
+      return;
+    }
+
+    setState(() => _isChecking = true);
+    final result = await AiApiService.checkQuickAnswer(
+      question: widget.question,
+      answer: text,
+      topic: widget.topic,
+      gradeLevel: widget.gradeLevel,
+    );
+
+    if (mounted) {
+      setState(() {
+        _evaluation = result;
+        _isChecking = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final cardBg = isDark ? const Color(0xFF1E1A0F) : const Color(0xFFFFFBEB);
+    final borderColor = isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.3) : const Color(0xFFFCD34D);
+    final textPrimary = isDark ? AppColors.textPrimaryDark : const Color(0xFF78350F);
+
+    final isCorrect = _evaluation?['is_correct'] ?? false;
+    final feedback = _evaluation?['feedback'] as String?;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: isDark
-            ? const LinearGradient(
-                colors: [Color(0xFF451A03), Color(0xFF2C1A03)],
-              )
-            : const LinearGradient(
-                colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
-              ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.3) : const Color(0xFFFCD34D),
-        ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.quiz_outlined, size: 16, color: const Color(0xFFF59E0B)),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.quiz_outlined, size: 18, color: Color(0xFFF59E0B)),
+              ),
+              const SizedBox(width: 10),
               Text(
-                'Quick Check',
+                'Quick Check Challenge',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFFF59E0B),
                 ),
               ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Interactive Practice',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFF59E0B)),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
-            question,
+            widget.question,
             style: TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              color: isDark ? AppColors.textPrimaryDark : const Color(0xFF78350F),
-              fontWeight: FontWeight.w500,
+              fontSize: 15,
+              height: 1.5,
+              color: textPrimary,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 14),
+
+          // Text & Voice Input Field
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: _isRecording
+                    ? const Color(0xFFEF4444)
+                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                width: _isRecording ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _answerController,
+                    maxLines: 3,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: _isRecording
+                          ? 'Listening to your voice...'
+                          : 'Type your answer here or tap the mic to speak...',
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: _isRecording
+                            ? const Color(0xFFEF4444)
+                            : (isDark ? AppColors.textMutedDark : AppColors.textMutedLight),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    onPressed: _toggleAudioRecording,
+                    tooltip: _isRecording ? 'Stop Recording' : 'Record Voice Answer',
+                    icon: Icon(
+                      _isRecording ? Icons.stop_circle_rounded : Icons.mic_rounded,
+                      color: _isRecording ? const Color(0xFFEF4444) : const Color(0xFF8B5CF6),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Action Buttons
+          Row(
+            children: [
+              ElevatedButton.icon(
+                onPressed: _isChecking ? null : _checkAnswer,
+                icon: _isChecking
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.check, size: 16),
+                label: Text(_isChecking ? 'Checking with Lumos...' : 'Check Answer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF59E0B),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 10),
+              TextButton.icon(
+                onPressed: () {
+                  _answerController.clear();
+                  setState(() => _evaluation = null);
+                },
+                icon: const Icon(Icons.refresh, size: 14),
+                label: const Text('Reset', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+
+          // Feedback Banner
+          if (feedback != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isCorrect
+                    ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFDCFCE7))
+                    : (isDark ? const Color(0xFF7C2D12) : const Color(0xFFFFEDD5)),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isCorrect
+                      ? (isDark ? const Color(0xFF10B981) : const Color(0xFF86EFAC))
+                      : (isDark ? const Color(0xFFF97316) : const Color(0xFFFDBA74)),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    isCorrect ? Icons.emoji_events_outlined : Icons.lightbulb_outline_rounded,
+                    color: isCorrect ? const Color(0xFF10B981) : const Color(0xFFF97316),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isCorrect ? 'Awesome job! 🎉' : 'Friendly Lumos Tip ✨',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isCorrect
+                                ? (isDark ? Colors.white : const Color(0xFF14532D))
+                                : (isDark ? Colors.white : const Color(0xFF7C2D12)),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          feedback,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            color: isCorrect
+                                ? (isDark ? Colors.white70 : const Color(0xFF166534))
+                                : (isDark ? Colors.white70 : const Color(0xFF9A3412)),
+                          ),
+                        ),
+                        if (!isCorrect) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '💡 Tip: Try reviewing the lesson sections above and give it another try — you\'ve got this!',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -12,6 +12,7 @@ import '../widgets/next_action_banner.dart';
 import '../widgets/side_navigation_menu.dart';
 import '../widgets/learn_your_way_panel.dart';
 import '../widgets/student_capability_widget.dart';
+import '../widgets/courses_progress_panel.dart';
 
 class WorkspaceScreen extends ConsumerStatefulWidget {
   final ThemeMode themeMode;
@@ -87,7 +88,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   ),
 
                   // Right AI Companion Panel (Collapsible)
-                  if (_isAiOpen && (activeTab == 'workspace' || activeTab == 'practice'))
+                  if (_isAiOpen && (activeTab == 'workspace' || activeTab == 'learnYourWay'))
                     AiCompanionPanel(
                       onClose: () => setState(() => _isAiOpen = false),
                     ),
@@ -105,12 +106,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   Widget _buildActiveContentView(String activeTab) {
     switch (activeTab) {
+      case 'coursesProgress':
+        return const CoursesProgressPanel();
       case 'learnYourWay':
         return const LearnYourWayPanel();
       case 'capabilities':
         return const StudentCapabilityWidget();
-      case 'practice':
-      case 'progress':
       case 'workspace':
       default:
         return const LearningPlayerCanvas();

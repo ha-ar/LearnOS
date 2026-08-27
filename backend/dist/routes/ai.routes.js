@@ -9,4 +9,5 @@ router.post('/tutor', ai_controller_js_1.AiController.tutorInteraction);
 router.post('/hint', ai_controller_js_1.AiController.getHint);
 router.post('/explain', ai_controller_js_1.AiController.explainConcept);
 router.post('/lesson', ai_controller_js_1.AiController.generateLesson);
+router.post('/quick-check', ai_controller_js_1.AiController.checkQuickAnswer);
 exports.default = router;

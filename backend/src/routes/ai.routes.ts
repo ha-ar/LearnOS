@@ -10,6 +10,7 @@ router.post('/tutor', AiController.tutorInteraction);
 router.post('/hint', AiController.getHint);
 router.post('/explain', AiController.explainConcept);
 router.post('/lesson', AiController.generateLesson);
+router.post('/quick-check', AiController.checkQuickAnswer);
 
 export default router;
 

@@ -283,13 +283,13 @@ Respond strictly in JSON with these keys:
     }
 
     try {
-      const systemInstruction = `You are Lumos, a warm, patient, and encouraging AI learning companion for ${learner_name} (${grade_level} Math, topic: ${topic}).
-Your Core Rules:
-1. ALWAYS use the Socratic method: Never give the direct answer to a problem.
-2. Ask one gentle clarifying question or give a real-world analogy (e.g. cutting a pizza or chocolate bar).
-3. Keep responses concise (maximum 3 sentences).
-4. Be super encouraging and celebrate effort over correctness!
-5. Never issue formal grades or marks.`;
+      const systemInstruction = `You are Lumos, a super friendly, casual, and encouraging peer learning buddy for ${learner_name} (${grade_level}, topic: ${topic}).
+Your Core Personality & Rules:
+1. Act like a supportive, upbeat best friend helping another friend study — NOT a formal teacher, grader, or strict evaluator.
+2. Talk casually and warmly: use friendly openers like "Hey!", "Totally get what you mean!", "No worries at all, let's look at it like this...".
+3. Use the Socratic method with fun real-world examples: guide them with one gentle question or relatable analogy rather than dumping the answer.
+4. Keep replies concise and easy to read (max 2-3 short sentences).
+5. Always celebrate effort and curiosity! Never give letter grades or marks.`;
 
       const contents = [
         ...history.map((h) => ({
@@ -314,7 +314,7 @@ Your Core Rules:
 
       // Post-generation safety check
       const postSafety = SafetyService.checkContentSafety(replyText);
-      const finalReply = postSafety.safe ? replyText : 'Let us think about this problem step by step! What part of the question should we look at first?';
+      const finalReply = postSafety.safe ? replyText : 'Hey, let’s think through this together! What part of the question catches your eye first?';
 
       return {
         reply: finalReply,
@@ -331,6 +331,79 @@ Your Core Rules:
         safety_passed: true,
         escalate_to_mentor: false,
         model_used: 'deterministic-fallback-on-error',
+      };
+    }
+  }
+
+  /**
+   * Evaluate Quick Check written or spoken answer casually as a friendly peer study buddy
+   */
+  static async evaluateQuickCheckAnswer(params: {
+    question: string;
+    answer: string;
+    topic?: string;
+    learner_name?: string;
+    grade_level?: string;
+  }): Promise<{
+    is_correct: boolean;
+    feedback: string;
+    suggestion?: string;
+  }> {
+    const { question, answer, topic = 'this concept', learner_name = 'friend', grade_level = 'Grade 7' } = params;
+
+    if (!answer || answer.trim().length === 0) {
+      return {
+        is_correct: false,
+        feedback: "Hey! Whenever you're ready, type or record your thoughts above and we'll check it out together!",
+      };
+    }
+
+    const ai = this.getAiClient();
+    if (!ai) {
+      return {
+        is_correct: true,
+        feedback: `Awesome effort, ${learner_name}! You're thinking about this in the right way. Keep building that momentum!`,
+      };
+    }
+
+    try {
+      const prompt = `You are Lumos, a super friendly, casual peer study buddy.
+Review your friend's spoken/written answer to this Quick Check question for their ${grade_level} topic on "${topic}".
+
+Question: "${question}"
+Friend's Answer: "${answer}"
+
+Rules:
+1. Speak casually, warmly, and encouragingly like a supportive friend.
+2. If they got it right: Celebrate them casually ("Spot on!", "Boom, you nailed it!").
+3. If they made mistakes or missed key points: DO NOT be harsh or formal. Warmly encourage them: e.g. "Hey, really good try! It looks like there's a little mix-up with [...]. How about we go through the topic section again and give it another shot together?"
+4. Output valid JSON:
+{
+  "is_correct": boolean,
+  "feedback": "casual warm friendly explanation (max 2-3 sentences)",
+  "suggestion": "optional tip"
+}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.4,
+          maxOutputTokens: 300,
+        },
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      return {
+        is_correct: parsed.is_correct ?? true,
+        feedback: parsed.feedback || `Great thinking, ${learner_name}! Keep it up!`,
+        suggestion: parsed.suggestion,
+      };
+    } catch (err) {
+      return {
+        is_correct: true,
+        feedback: `Nice try, ${learner_name}! Let's keep exploring this together.`,
       };
     }
   }

@@ -23,7 +23,7 @@ class StudentCapabilityWidget extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Student Capability Header Card
+            // 1. Student Profile Header
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -62,7 +62,7 @@ class StudentCapabilityWidget extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${sessionState.grade} • ${sessionState.subject} • Topic: ${sessionState.topic}',
+                          '${sessionState.grade} • International Baccalaureate (IB) • ${sessionState.subject}',
                           style: TextStyle(fontSize: 12, color: textMuted),
                         ),
                       ],
@@ -71,21 +71,66 @@ class StudentCapabilityWidget extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.15),
+                      color: AppColors.accentCyan.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.accentCyan.withOpacity(0.3)),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.verified, size: 14, color: AppColors.success),
-                        const SizedBox(width: 6),
+                        Icon(Icons.visibility_outlined, size: 14, color: AppColors.accentCyan),
+                        SizedBox(width: 6),
                         Text(
-                          'Mastery: ${sessionState.masteryLevel.toUpperCase()}',
-                          style: const TextStyle(
+                          'Learner View Only',
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.success,
+                            color: AppColors.accentCyan,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 2. Mentor & Guardian Governance Notice Banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF6366F1).withOpacity(0.3) : const Color(0xFFBFDBFE),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.shield_outlined, color: Color(0xFF3B82F6), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Governance & Capability Assessment Authority',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF3B82F6),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Student capabilities, cognitive preferences, and baseline metrics are assigned and evaluated by your mentor (Ms. Nadia) and guardian (Mr. Ali). Unassessed dimensions remain N/A until formal evaluation.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.5,
+                            color: isDark ? AppColors.textPrimaryDark : const Color(0xFF1E3A8A),
                           ),
                         ),
                       ],
@@ -97,222 +142,154 @@ class StudentCapabilityWidget extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // 2. Adaptive Learning Controls Grid
+            Text(
+              'Assessed Capability Dimensions',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Below are the verified learning and cognitive dimensions recorded in your digital twin.',
+              style: TextStyle(fontSize: 12, color: textMuted),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 3. Capability Dimensions Grid
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left Column: Mastery & Pacing Settings
                 Expanded(
-                  child: Card(
-                    elevation: 0,
-                    color: cardBg,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: borderColor),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.speed, color: AppColors.accentCyan, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Capability & Pacing Controls',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 24),
-
-                          // Target Mastery Level Selector
-                          Text(
-                            'Current Mastery Level',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textMuted),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: ['emerging', 'developing', 'mastered'].map((lvl) {
-                              final isSelected = sessionState.masteryLevel.toLowerCase() == lvl;
-                              return Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 6.0),
-                                  child: ChoiceChip(
-                                    label: Center(
-                                      child: Text(
-                                        lvl.toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                          color: isSelected ? Colors.white : textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                    selected: isSelected,
-                                    selectedColor: AppColors.primary,
-                                    backgroundColor: isDark ? AppColors.darkSurfaceElevated : AppColors.lightBackground,
-                                    onSelected: (_) {
-                                      ref.read(sessionProvider.notifier).updateMasteryLevel(lvl);
-                                    },
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Pacing Speed Controller
-                          Text(
-                            'Adaptation Pacing Speed',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textMuted),
-                          ),
-                          const SizedBox(height: 8),
-                          Column(
-                            children: [
-                              'Gentle Pace (Extra Scaffolding)',
-                              'Balanced Pace (Standard)',
-                              'Accelerated Pace (Fast Track)',
-                            ].map((speed) {
-                              final speedName = speed.split(' (')[0];
-                              return RadioListTile<String>(
-
-                                value: speedName,
-                                groupValue: sessionState.pacingSpeed,
-                                title: Text(speed, style: TextStyle(fontSize: 12, color: textPrimary)),
-                                activeColor: AppColors.accentCyan,
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    ref.read(sessionProvider.notifier).setPacingSpeed(val);
-                                  }
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: _buildCapabilityCard(
+                    title: 'Pacing & Cognitive Speed',
+                    icon: Icons.speed,
+                    value: sessionState.pacingSpeed,
+                    statusText: 'Active Mentor Setting',
+                    statusColor: AppColors.accentCyan,
+                    description: 'Determines the speed and breakdown detail of interactive lesson explanations.',
+                    cardBg: cardBg,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
                   ),
                 ),
-
                 const SizedBox(width: 16),
-
-                // Right Column: Skill Breakdown Matrix
                 Expanded(
-                  child: Card(
-                    elevation: 0,
-                    color: cardBg,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: borderColor),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.bar_chart, color: AppColors.pastelLavenderText, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Sub-Skill Capability Breakdown',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 24),
-
-                          _buildSkillProgress(
-                            'Fractional Concept Visuals',
-                            0.85,
-                            '85% Mastery',
-                            AppColors.success,
-                            textPrimary,
-                            textMuted,
-                          ),
-                          const SizedBox(height: 14),
-                          _buildSkillProgress(
-                            'Equivalent Ratio Logic',
-                            0.60,
-                            '60% Mastery',
-                            AppColors.warning,
-                            textPrimary,
-                            textMuted,
-                          ),
-                          const SizedBox(height: 14),
-                          _buildSkillProgress(
-                            'Denominator Multiplication',
-                            0.42,
-                            '42% (Needs Support)',
-                            AppColors.error,
-                            textPrimary,
-                            textMuted,
-                          ),
-                          const SizedBox(height: 14),
-                          _buildSkillProgress(
-                            'Word Problem Transfer',
-                            0.70,
-                            '70% Mastery',
-                            AppColors.accentCyan,
-                            textPrimary,
-                            textMuted,
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: _buildCapabilityCard(
+                    title: 'Target Concept Mastery',
+                    icon: Icons.military_tech_outlined,
+                    value: sessionState.masteryLevel.toUpperCase(),
+                    statusText: 'Assessed on ${sessionState.topic}',
+                    statusColor: AppColors.success,
+                    description: 'Current verified understanding benchmark across curriculum competencies.',
+                    cardBg: cardBg,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // 3. AI Socratic Companion Capabilities Info Card
-            Card(
-              elevation: 0,
-              color: isDark ? AppColors.darkSurfaceElevated : AppColors.pastelBlue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: isDark ? AppColors.darkBorder : AppColors.pastelBlueText.withOpacity(0.2),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildCapabilityCard(
+                    title: 'Math Reasoning Comfort',
+                    icon: Icons.calculate_outlined,
+                    value: 'N/A',
+                    statusText: 'Pending Mentor Evaluation',
+                    statusColor: const Color(0xFFF59E0B),
+                    description: 'Quantitative problem solving comfort index. Will be updated after module check.',
+                    cardBg: cardBg,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                  ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildCapabilityCard(
+                    title: 'Self-Regulation & Reflection Span',
+                    icon: Icons.psychology_outlined,
+                    value: 'N/A',
+                    statusText: 'Pending Mentor Evaluation',
+                    statusColor: const Color(0xFFF59E0B),
+                    description: 'Metacognitive feedback rating based on reflection step responses.',
+                    cardBg: cardBg,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // 4. Request Mentor Review Card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderColor),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(18.0),
-                child: Row(
-                  children: [
-                    const Icon(Icons.auto_awesome, color: AppColors.pastelBlueText, size: 24),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Personalized AI Learning Adaptation Active',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.pastelBlueText,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'The Socratic Companion automatically adjusts prompt complexity, hint levels, and question scaffolding based on ${sessionState.learnerName}\'s capability responses.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                            ),
-                          ),
-                        ],
-                      ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                ),
+                    child: const Icon(Icons.mark_chat_unread_outlined, color: AppColors.primary, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Have questions about your capabilities?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'You can request a capability review or pacing adjustment with Ms. Nadia at any time.',
+                          style: TextStyle(fontSize: 12, color: textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Capability review request sent to Ms. Nadia!'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.send_rounded, size: 14),
+                    label: const Text('Request Review', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -321,35 +298,79 @@ class StudentCapabilityWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildSkillProgress(
-    String skillName,
-    double percent,
-    String label,
-    Color color,
-    Color textPrimary,
-    Color textMuted,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(skillName, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary)),
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: percent,
-            minHeight: 8,
-            backgroundColor: color.withOpacity(0.12),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+  Widget _buildCapabilityCard({
+    required String title,
+    required IconData icon,
+    required String value,
+    required String statusText,
+    required Color statusColor,
+    required String description,
+    required Color cardBg,
+    required Color borderColor,
+    required Color textPrimary,
+    required Color textMuted,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: statusColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: value == 'N/A' ? textMuted : textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(fontSize: 11, color: textMuted, height: 1.4),
+          ),
+        ],
+      ),
     );
   }
 }

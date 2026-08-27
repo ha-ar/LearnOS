@@ -22,4 +22,16 @@ class TwinApiService {
       return [];
     }
   }
+
+  /// Fetch real curriculum course progress via GET /api/twin/:learner_id/course-progress
+  static Future<Map<String, dynamic>> getCourseProgress(String learnerId) async {
+    try {
+      final res = await ApiClient.asyncGet('/twin/$learnerId/course-progress', requireAuth: true);
+      return res['progress'] ?? res;
+    } catch (e) {
+      debugPrint('Course progress fetch error: $e');
+      return {};
+    }
+  }
 }
+

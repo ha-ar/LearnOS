@@ -7,6 +7,7 @@ const router = (0, express_1.Router)();
 router.use(auth_js_1.authenticateToken);
 // Digital Twin Summary & Competency Reads
 router.get('/:learner_id', twin_controller_js_1.TwinController.getTwinSummary);
+router.get('/:learner_id/course-progress', twin_controller_js_1.TwinController.getCourseProgress);
 router.get('/:learner_id/competencies', twin_controller_js_1.TwinController.getCompetencies);
 router.get('/:learner_id/competencies/:competency_id', twin_controller_js_1.TwinController.getCompetencyById);
 router.patch('/:learner_id/competencies/:competency_id', (0, auth_js_1.requireRole)(['mentor', 'admin', 'superadmin']), twin_controller_js_1.TwinController.updateCompetency);

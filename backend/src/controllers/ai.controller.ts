@@ -150,6 +150,34 @@ export class AiController {
       res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
     }
   }
+
+  /**
+   * POST /api/ai/quick-check — Check written or spoken answer casually as a friendly study buddy
+   */
+  static async checkQuickAnswer(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { question, answer, topic, grade_level } = req.body;
+      const learner_name = req.user?.name || 'Learner';
+
+      if (!question || !answer) {
+        res.status(400).json({ error: 'question and answer are required', code: 'MISSING_FIELDS' });
+        return;
+      }
+
+      const evaluation = await AiService.evaluateQuickCheckAnswer({
+        question,
+        answer,
+        topic,
+        learner_name,
+        grade_level,
+      });
+
+      res.status(200).json({ success: true, ...evaluation });
+    } catch (err: any) {
+      console.error('AI Quick Check error:', err);
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
+    }
+  }
 }
 
 

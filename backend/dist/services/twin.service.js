@@ -100,6 +100,111 @@ class TwinService {
         return res.rows[0];
     }
     /**
+     * Get real Course & Subject Progress breakdown for a learner
+     */
+    static async getLearnerCourseProgress(learnerId) {
+        // 1. Resolve learner profile
+        const profileRes = await (0, index_js_1.query)(`SELECT lp.grade, lp.curriculum_id, c.name as curriculum_name
+       FROM learner_profiles lp
+       LEFT JOIN curricula c ON c.id = lp.curriculum_id
+       WHERE lp.learner_id = $1`, [learnerId]);
+        const grade = profileRes.rows[0]?.grade || 'Grade 7';
+        const curriculumId = profileRes.rows[0]?.curriculum_id;
+        const curriculumName = profileRes.rows[0]?.curriculum_name || 'International Baccalaureate';
+        // 2. Fetch all competencies for this curriculum and grade
+        const allCompRes = await (0, index_js_1.query)(`SELECT id, subject, topic, sequence_order, programme, description
+       FROM competencies
+       WHERE is_active = true
+         AND ($1::uuid IS NULL OR curriculum_id = $1)
+         AND ($2::text IS NULL OR grade_level = $2)
+       ORDER BY subject, sequence_order ASC NULLS LAST, created_at ASC`, [curriculumId || null, grade]);
+        // 3. Fetch learner states
+        const statesRes = await (0, index_js_1.query)(`SELECT competency_id, mastery_level, mastery_score, attempts_total, attempts_correct
+       FROM learner_competency_states
+       WHERE learner_id = $1`, [learnerId]);
+        const statesMap = new Map();
+        for (const s of statesRes.rows) {
+            statesMap.set(s.competency_id, s);
+        }
+        // Group competencies by subject
+        const subjectMap = new Map();
+        for (const comp of allCompRes.rows) {
+            const subject = comp.subject || 'General';
+            if (!subjectMap.has(subject)) {
+                subjectMap.set(subject, []);
+            }
+            subjectMap.get(subject).push(comp);
+        }
+        const courses = [];
+        let totalCurriculumTopics = 0;
+        let totalCompletedTopics = 0;
+        for (const [subject, comps] of subjectMap.entries()) {
+            let completedCount = 0;
+            let inProgressCount = 0;
+            let nextTopic = comps[0]?.topic || 'Introductory Unit';
+            let nextCompId = comps[0]?.id || null;
+            let foundNext = false;
+            const topics = comps.map((c, idx) => {
+                const state = statesMap.get(c.id);
+                const masteryScore = state ? parseFloat(state.mastery_score) : 0;
+                const attempts = state ? parseInt(state.attempts_total, 10) : 0;
+                let status = 'upcoming';
+                if (state && (state.mastery_level === 'proficient' || masteryScore >= 0.8)) {
+                    status = 'completed';
+                    completedCount++;
+                }
+                else if (state && (attempts > 0 || masteryScore > 0)) {
+                    status = 'in_progress';
+                    inProgressCount++;
+                    if (!foundNext) {
+                        nextTopic = c.topic;
+                        nextCompId = c.id;
+                        foundNext = true;
+                    }
+                }
+                else if (!foundNext) {
+                    nextTopic = c.topic;
+                    nextCompId = c.id;
+                    foundNext = true;
+                }
+                return {
+                    id: c.id,
+                    topic: c.topic,
+                    order: c.sequence_order || (idx + 1),
+                    status,
+                    mastery_level: state?.mastery_level || 'not_started',
+                    mastery_score: masteryScore,
+                };
+            });
+            totalCurriculumTopics += comps.length;
+            totalCompletedTopics += completedCount;
+            const progressPercent = comps.length > 0 ? Math.round((completedCount / comps.length) * 100) : 0;
+            courses.push({
+                subject,
+                curriculum_name: curriculumName,
+                grade,
+                total_topics: comps.length,
+                completed_topics: completedCount,
+                in_progress_topics: inProgressCount,
+                progress_percent: progressPercent,
+                next_topic: nextTopic,
+                next_competency_id: nextCompId,
+                all_topics: topics,
+            });
+        }
+        const overallProgressPercent = totalCurriculumTopics > 0 ? Math.round((totalCompletedTopics / totalCurriculumTopics) * 100) : 0;
+        return {
+            learner_id: learnerId,
+            grade,
+            curriculum_name: curriculumName,
+            overall_progress_percent: overallProgressPercent,
+            total_courses: courses.length,
+            total_curriculum_topics: totalCurriculumTopics,
+            total_completed_topics: totalCompletedTopics,
+            courses,
+        };
+    }
+    /**
      * Auto-generate human-readable evidence summary from stats
      */
     static generateEvidenceSummary(topicName, attemptsTotal, attemptsCorrect, confidence) {

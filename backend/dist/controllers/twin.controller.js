@@ -32,6 +32,24 @@ class TwinController {
         }
     }
     /**
+     * GET /api/twin/:learner_id/course-progress
+     */
+    static async getCourseProgress(req, res) {
+        try {
+            const { learner_id } = req.params;
+            if (!TwinController.checkAccess(req, learner_id)) {
+                res.status(403).json({ error: 'Access denied to this Digital Twin', code: 'FORBIDDEN' });
+                return;
+            }
+            const progress = await twin_service_js_1.TwinService.getLearnerCourseProgress(learner_id);
+            res.status(200).json({ progress });
+        }
+        catch (err) {
+            console.error('Get course progress error:', err);
+            res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
+        }
+    }
+    /**
      * GET /api/twin/:learner_id/competencies
      */
     static async getCompetencies(req, res) {

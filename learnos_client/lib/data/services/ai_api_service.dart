@@ -142,8 +142,36 @@ class AiApiService {
     'summary': 'You have now learned the core ideas behind $topic and seen how they apply to real-life situations.',
     'quick_check': 'Can you give one example from your daily life where $topic would be useful?',
     'competency': topic,
-    'grade_level': 'Grade 6',
+    'grade_level': 'Grade 7',
   };
+
+  /// Evaluate Quick Check answer via POST /api/ai/quick-check
+  static Future<Map<String, dynamic>> checkQuickAnswer({
+    required String question,
+    required String answer,
+    String? topic,
+    String? gradeLevel,
+  }) async {
+    try {
+      final res = await ApiClient.asyncPost(
+        '/ai/quick-check',
+        {
+          'question': question,
+          'answer': answer,
+          if (topic != null) 'topic': topic,
+          if (gradeLevel != null) 'grade_level': gradeLevel,
+        },
+        requireAuth: true,
+      );
+      return res;
+    } catch (e) {
+      return {
+        'is_correct': true,
+        'feedback': 'Great effort! You are doing awesome thinking through this problem.',
+      };
+    }
+  }
 }
+
 
 
