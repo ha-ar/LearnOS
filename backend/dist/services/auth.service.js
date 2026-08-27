@@ -102,6 +102,15 @@ class AuthService {
             resource_id: user.id,
             result: 'success',
         });
+        // Fetch learner profile if role is learner
+        let profile = null;
+        if (user.role === 'learner') {
+            const profileRes = await (0, index_js_1.query)(`SELECT lp.guardian_id, lp.grade, lp.curriculum_id, lp.consent_given, lp.consent_given_at, c.name as curriculum_name
+         FROM learner_profiles lp
+         LEFT JOIN curricula c ON c.id = lp.curriculum_id
+         WHERE lp.learner_id = $1`, [user.id]);
+            profile = profileRes.rows[0] || null;
+        }
         return {
             access_token: accessToken,
             refresh_token: rawRefreshToken,
@@ -113,6 +122,7 @@ class AuthService {
                 name: user.name,
                 role: user.role,
                 tenant_id: user.tenant_id,
+                profile,
             },
         };
     }

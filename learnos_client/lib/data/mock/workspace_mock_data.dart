@@ -33,8 +33,8 @@ class MockQuizQuestion {
 }
 
 class WorkspaceMockData {
-  static const String learnerName = "Ahmed Khan";
-  static const String grade = "Grade 6";
+  static const String learnerName = "Zuha Ali";
+  static const String grade = "Grade 7";
   static const String subject = "Mathematics";
   static const String topic = "Equivalent Fractions";
   static const String competency = "Finding and verifying equivalent fractions";

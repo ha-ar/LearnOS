@@ -211,18 +211,18 @@ class SessionState {
   static SessionState initial() {
     return const SessionState(
       sessionId: 'sess-001',
-      learnerId: '10000000-0000-0000-0000-000000000001',
-      learnerName: 'Ahmed Khan',
+      learnerId: '50000000-0000-0000-0000-000000000001',
+      learnerName: 'Zuha Ali',
       tenantId: '00000000-0000-0000-0000-000000000001',
-      grade: 'Grade 6',
+      grade: 'Grade 7',
       subject: 'Mathematics',
-      topic: 'Equivalent Fractions',
-      competency: 'Equivalent Fractions',
+      topic: 'Basic Algebra & Equations',
+      competency: 'Basic Algebra & Equations',
       masteryLevel: 'emerging',
-      goal: 'Review basic fractions; learn equivalent fractions; practice 5 check questions; reflect.',
+      goal: 'Review basic concepts; learn new topic; practice check questions; reflect.',
       tasks: [
-        SessionTask(id: 'task-001', order: 1, type: 'review', title: 'Quick Review: Basic Fractions', durationMin: 10, status: TaskStatus.completed),
-        SessionTask(id: 'task-002', order: 2, type: 'learn', title: 'Equivalent Fractions – Video Lesson', durationMin: 15, status: TaskStatus.active),
+        SessionTask(id: 'task-001', order: 1, type: 'review', title: 'Quick Review: Basic Concepts', durationMin: 10, status: TaskStatus.completed),
+        SessionTask(id: 'task-002', order: 2, type: 'learn', title: 'Interactive Lesson', durationMin: 15, status: TaskStatus.active),
         SessionTask(id: 'task-003', order: 3, type: 'practice', title: 'Practice Check Questions (5 Items)', durationMin: 10, status: TaskStatus.upcoming),
         SessionTask(id: 'task-004', order: 4, type: 'reflect', title: 'Session Reflection & Confidence Check', durationMin: 5, status: TaskStatus.upcoming),
       ],
@@ -230,7 +230,7 @@ class SessionState {
       elapsedSeconds: 900,
       totalDurationMin: 40,
       aiMessages: [
-        AiMessage(sender: 'ai', text: "Hello Ahmed! I'm your AI Companion today. I'm here to help you understand equivalent fractions. Ask me anything!", time: '10:00 AM'),
+        AiMessage(sender: 'ai', text: "Hello Zuha! I'm your AI Companion today. I'm here to help you with your Grade 7 IB lesson. Ask me anything!", time: '10:00 AM'),
       ],
       escalationStatus: EscalationStatus.idle,
       sessionStarted: false,
@@ -254,6 +254,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
       learnerId: user.id,
       learnerName: user.name,
       tenantId: user.tenantId,
+      grade: user.grade ?? 'Grade 7',
       isLoading: true,
     );
 
@@ -307,7 +308,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
         learnerId: user.id,
         learnerName: user.name,
         tenantId: user.tenantId,
-        grade: user.grade ?? 'Grade 6',
+        grade: user.grade ?? 'Grade 7',
         subject: topicSourceTask?.subject ?? 'Mathematics',
         topic: topicSourceTask?.topic ?? 'Mathematics',
         competency: topicSourceTask?.topic ?? state.competency,

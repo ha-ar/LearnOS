@@ -7,6 +7,8 @@ class AuthUser {
   final String accessToken;
   final String refreshToken;
   final String? grade;
+  final String? curriculumId;
+  final String? curriculumName;
 
   const AuthUser({
     required this.id,
@@ -17,10 +19,13 @@ class AuthUser {
     required this.accessToken,
     required this.refreshToken,
     this.grade,
+    this.curriculumId,
+    this.curriculumName,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json, String accessToken, String refreshToken) {
     final userJson = json['user'] ?? json;
+    final profile = userJson['profile'] as Map<String, dynamic>?;
     return AuthUser(
       id: userJson['id'] ?? '',
       email: userJson['email'] ?? '',
@@ -29,7 +34,10 @@ class AuthUser {
       tenantId: userJson['tenant_id'] ?? '',
       accessToken: accessToken,
       refreshToken: refreshToken,
-      grade: userJson['profile']?['grade'] ?? 'Grade 6',
+      grade: profile?['grade'] ?? userJson['grade'] ?? 'Grade 7',
+      curriculumId: profile?['curriculum_id'] ?? userJson['curriculum_id'],
+      curriculumName: profile?['curriculum_name'] ?? userJson['curriculum_name'] ?? 'International Baccalaureate',
     );
   }
 }
+
