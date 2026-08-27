@@ -50,13 +50,8 @@ async function run(): Promise<void> {
     await client.query('COMMIT');
 
     console.log('\n✅ Seed completed successfully!');
-    console.log('\nPilot users seeded (password: LearnOS2026!):');
-    console.log('  learner  → ahmed@pilot.learnos');
-    console.log('  learner  → sara@pilot.learnos');
-    console.log('  learner  → omar@pilot.learnos');
-    console.log('  mentor   → mentor@pilot.learnos');
-    console.log('  parent   → parent@pilot.learnos');
-    console.log('  admin    → admin@pilot.learnos');
+    console.log('\nStudent seeded (password: LearnOS2026!):');
+    console.log('  learner  → zuha.ali@learnos.app');
   } catch (err: any) {
     await client.query('ROLLBACK');
     console.error('\n❌ Seed failed:', err.message);

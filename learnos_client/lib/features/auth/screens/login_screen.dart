@@ -22,8 +22,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   late TabController _tabController;
 
   // Login Controllers
-  final TextEditingController _emailController = TextEditingController(text: 'ahmed@pilot.learnos');
-  final TextEditingController _passwordController = TextEditingController(text: 'LearnOS2026!');
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   // Register Controllers (Admin Provisioning)
   final TextEditingController _regNameController = TextEditingController();
   final TextEditingController _regEmailController = TextEditingController();
-  final TextEditingController _regPasswordController = TextEditingController(text: 'LearnOS2026!');
+  final TextEditingController _regPasswordController = TextEditingController();
   String _selectedRole = 'learner';
   final String _selectedGrade = 'Grade 6';
 
@@ -105,14 +105,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         });
       }
     }
-  }
-
-  void _fillMockCredentials(String email, String password) {
-    setState(() {
-      _emailController.text = email;
-      _passwordController.text = password;
-      _errorMessage = null;
-    });
   }
 
   @override
@@ -254,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       controller: _emailController,
                                       style: AppTypography.bodyMedium(isDark: isDark),
                                       decoration: InputDecoration(
-                                        hintText: "ahmed@pilot.learnos",
+                                        hintText: "you@example.com",
                                         isDense: true,
                                         filled: true,
                                         fillColor: inputBg,
@@ -294,19 +286,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       ),
                                     ),
                                     const SizedBox(height: 16),
-
-                                    // Quick Mock Credentials Pills for Pilot Testing
-                                    Text("Quick Pilot Logins:", style: AppTypography.caption(isDark: isDark)),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        _quickPill("Ahmed (Student)", "ahmed@pilot.learnos", "LearnOS2026!"),
-                                        const SizedBox(width: 6),
-                                        _quickPill("Ms. Nadia (Mentor)", "mentor@pilot.learnos", "LearnOS2026!"),
-                                        const SizedBox(width: 6),
-                                        _quickPill("Admin", "admin@pilot.learnos", "LearnOS2026!"),
-                                      ],
-                                    ),
 
                                     const Spacer(),
 
@@ -367,7 +346,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                         controller: _regEmailController,
                                         style: AppTypography.bodyMedium(isDark: isDark),
                                         decoration: InputDecoration(
-                                          hintText: "sara@pilot.learnos",
+                                          hintText: "learner@example.com",
                                           isDense: true,
                                           filled: true,
                                           fillColor: inputBg,
@@ -438,26 +417,4 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _quickPill(String label, String email, String password) {
-    return Expanded(
-      child: InkWell(
-        onTap: () => _fillMockCredentials(email, password),
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          decoration: BoxDecoration(
-            color: AppColors.primaryContainer,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ),
-    );
-  }
 }

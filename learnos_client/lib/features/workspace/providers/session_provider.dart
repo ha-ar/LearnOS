@@ -300,6 +300,8 @@ class SessionNotifier extends StateNotifier<SessionState> {
       final topicSourceTask = (activeIdx >= 0 ? tasks[activeIdx] : null) ??
           tasks.cast<SessionTask?>().firstWhere((t) => t?.topic != null, orElse: () => null);
 
+      final greetingTopic = topicSourceTask?.topic ?? 'your lesson';
+
       state = state.copyWith(
         sessionId: sessionObj['id'] ?? 'sess-001',
         learnerId: user.id,
@@ -314,6 +316,14 @@ class SessionNotifier extends StateNotifier<SessionState> {
         tasks: tasks.isNotEmpty ? tasks : state.tasks,
         activeTaskIndex: activeIdx >= 0 ? activeIdx : 0,
         totalDurationMin: sessionObj['total_duration_min'] ?? 40,
+        aiMessages: [
+          AiMessage(
+            sender: 'ai',
+            text: "Hello ${user.name}! I'm your AI Companion today. I'm here to help you with $greetingTopic. Ask me anything!",
+            time: _formatNow(),
+          ),
+        ],
+        activeConcept: topicSourceTask?.topic ?? state.activeConcept,
         isLoading: false,
       );
     } catch (e) {
@@ -322,6 +332,13 @@ class SessionNotifier extends StateNotifier<SessionState> {
         learnerId: user.id,
         learnerName: user.name,
         tenantId: user.tenantId,
+        aiMessages: [
+          AiMessage(
+            sender: 'ai',
+            text: "Hello ${user.name}! I'm your AI Companion. I'm having trouble loading today's session — try refreshing in a moment.",
+            time: _formatNow(),
+          ),
+        ],
         isLoading: false,
       );
     }

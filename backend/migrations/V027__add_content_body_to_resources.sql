@@ -13,10 +13,11 @@ COMMENT ON COLUMN resources.content_generated_at IS 'When AI last generated or r
 ALTER TABLE resources DROP CONSTRAINT IF EXISTS resources_format_check;
 ALTER TABLE resources
   ADD CONSTRAINT resources_format_check
-  CHECK (format IN ('article','internal_quiz','interactive','worked_example','audio','ai_lesson','other'));
+  CHECK (format IN ('video','article','internal_quiz','interactive','worked_example','audio','ai_lesson','other'));
 
 -- Update provider type check to remove deep_link requirement
 ALTER TABLE resource_providers DROP CONSTRAINT IF EXISTS resource_providers_type_check;
 ALTER TABLE resource_providers
   ADD CONSTRAINT resource_providers_type_check
-  CHECK (type IN ('internal','embedded','api'));
+  CHECK (type IN ('deep_link','internal','embedded','api'));
+
